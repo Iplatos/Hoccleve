@@ -11,6 +11,8 @@ interface AuthProps {
 
 export const TOKEN_KEY = 'my-jwt'
 export const REFRESH_TOKEN_KEY = 'my-refresh-jwt'
+export const API_URL = 'https://backend.hoccleveclub.ru'
+export const API_URL_NAME = 'https://backend.hoccleveclub.ru'
 export const USER_ID = 'user-id'
 
 // УДАЛЯЕМ API_URL и API_URL_NAME - они больше не нужны
@@ -58,8 +60,7 @@ export const AuthProvider = ({ children }: any) => {
   const login = async (email: string, password: string) => {
     setLoading(true)
     try {
-      // ПРЯМОЙ ЗАПРОС НА ФИКСИРОВАННЫЙ URL (база URL уже в axiosConfig)
-      const result = await axiosInstance.post('/v1/auth/login/?expand=roles', {
+      const result = await axiosInstance.post('/v1/auth/login', {
         email,
         password,
       })
@@ -69,8 +70,9 @@ export const AuthProvider = ({ children }: any) => {
 
         await AsyncStorage.setItem(TOKEN_KEY, token)
         await AsyncStorage.setItem(USER_ID, user.id.toString())
-        await AsyncStorage.setItem(REFRESH_TOKEN_KEY, JSON.stringify(refresh_token))
-
+        await AsyncStorage.setItem(REFRESH_TOKEN_KEY, refresh_token)
+        await AsyncStorage.setItem(API_URL, 'https://backend.hoccleveclub.ru')
+        await AsyncStorage.setItem(API_URL_NAME, 'https://backend.hoccleveclub.ru')
         axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`
 
         setAuthState({

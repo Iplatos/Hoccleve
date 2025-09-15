@@ -15,7 +15,6 @@ import { Menu } from '../components/Menu/Menu.tsx'
 import { LoginScreen } from '../screens/auth/LoginScreen.tsx'
 import { Header } from './Header.tsx'
 import { useAppDispatch, useAppSelector } from '../redux/hooks.ts'
-import { fetchPlatforms } from '../redux/slises/settingSlice.ts'
 import { useRoute } from '@react-navigation/native'
 import { navigationRef } from '../settings/navigationRef.ts'
 import { ROUTES } from '../constants/Routes.ts'
@@ -30,8 +29,8 @@ export const MainComponent: React.FC = () => {
   const [routeName, setRouteName] = useState<string | undefined>(undefined)
 
   // useEffect(() => {
-  //     dispatch(fetchPlatforms());
-  // }, []);
+  //   dispatch(fetchPlatforms())
+  // }, [])
 
   // Слушаем изменения маршрута
   useEffect(() => {

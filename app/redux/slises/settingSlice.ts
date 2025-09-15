@@ -39,7 +39,6 @@ export const fetchSettings = createAsyncThunk<Setting[], void, { rejectValue: st
   }
 )
 
-// УДАЛЯЕМ fetchPlatforms - больше не нужен!
 // export const fetchPlatforms = createAsyncThunk<Platform[], void, { rejectValue: string }>(...)
 
 export const registerPushToken = createAsyncThunk<
