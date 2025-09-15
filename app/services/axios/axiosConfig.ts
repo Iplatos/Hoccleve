@@ -1,12 +1,12 @@
-import axios from "axios";
+import axios from 'axios'
+
+const SINGLE_BACKEND_URL = 'https: backend.hoccleveclub.ru'
 
 const axiosInstance = axios.create({
-    baseURL: 'https://api.lk-impulse.ru',
-    headers: {
-        'Content-Type': 'application/json',
-    },
+  baseURL: SINGLE_BACKEND_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+})
 
-
-    // Другие настройки axios
-});
-export default axiosInstance;
+export default axiosInstance
