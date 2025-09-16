@@ -49,8 +49,7 @@
           "iCloudContainerEnvironment": "Production"
         }
       ],
-
-      "@config-plugins/react-native-pdf",
+      ["@config-plugins/react-native-pdf", "11.0.0"],
       "expo-web-browser"
     ]
   }
