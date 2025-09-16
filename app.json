@@ -14,11 +14,15 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.ipla.hoccleve"
+      "bundleIdentifier": "com.ipla.hoccleve",
+      "googleServicesFile": "./GoogleService-Info.plist",
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "Allow Hoccleve to access your microphone for audio recordings."
+      } // ← ЗАКРЫВАЮЩАЯ СКОБКА ДОБАВЛЕНА!
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/icon.png",
+        "foregroundImage": "./assets/adaptive-icon.png", // ← adaptive-icon.png!
         "backgroundColor": "#ffffff"
       },
       "package": "com.ipla.hoccleve",
