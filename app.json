@@ -23,8 +23,7 @@
       },
       "package": "com.ipla.hoccleve",
       "googleServicesFile": "./google-services.json",
-      "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "edgeToEdgeEnabled": true
     },
     "web": {
       "favicon": "./assets/favicon.png"
