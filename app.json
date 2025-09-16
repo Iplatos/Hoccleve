@@ -51,9 +51,17 @@
             "iCloudContainerEnvironment": "Production"
           }
         ],
-        ["@config-plugins/react-native-pdf", "11.0.0"],
+        [
+          "@config-plugins/react-native-pdf",
+          "11.0.0"
+        ],
         "expo-web-browser"
       ]
+    },
+    "extra": {
+      "eas": {
+        "projectId": "0a573569-5028-4590-988c-da5e341a5fb1"
+      }
     }
   }
 }
