@@ -18,6 +18,14 @@ expo-env.d.ts
 *.key
 *.mobileprovision
 
+# Firebase Admin Keys - ОЧЕНЬ ВАЖНО! НИКОГДА НЕ КОММИТЬ!
+*-firebase-adminsdk-*.json
+*firebase-adminsdk*
+firebase-admin-key.json
+firebase-admin-*.json
+google-services.json  # если нужно (обычно его комитят, но можно и не комитить)
+GoogleService-Info.plist  # если нужно
+
 # Metro
 .metro-health-check*
 
