@@ -18,42 +18,42 @@
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "NSMicrophoneUsageDescription": "Allow Hoccleve to access your microphone for audio recordings."
-      } // ← ЗАКРЫВАЮЩАЯ СКОБКА ДОБАВЛЕНА!
-    },
-    "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png", // ← adaptive-icon.png!
-        "backgroundColor": "#ffffff"
       },
-      "package": "com.ipla.hoccleve",
-      "googleServicesFile": "./google-services.json",
-      "edgeToEdgeEnabled": true
-    },
-    "web": {
-      "favicon": "./assets/favicon.png"
-    },
-    "extra": {
-      "eas": {
-        "projectId": "0a573569-5028-4590-988c-da5e341a5fb1"
-      }
-    },
-    "owner": "i.pla",
-    "plugins": [
-      "expo-secure-store",
-      [
-        "expo-av",
-        {
-          "microphonePermission": "Allow Hoccleve to access your microphone."
+      "android": {
+        "adaptiveIcon": {
+          "foregroundImage": "./assets/icon.png",
+          "backgroundColor": "#ffffff"
+        },
+        "package": "com.ipla.hoccleve",
+        "googleServicesFile": "./google-services.json",
+        "edgeToEdgeEnabled": true
+      },
+      "web": {
+        "favicon": "./assets/favicon.png"
+      },
+      "extra": {
+        "eas": {
+          "projectId": "0a573569-5028-4590-988c-da5e341a5fb1"
         }
-      ],
-      [
-        "expo-document-picker",
-        {
-          "iCloudContainerEnvironment": "Production"
-        }
-      ],
-      ["@config-plugins/react-native-pdf", "11.0.0"],
-      "expo-web-browser"
-    ]
+      },
+      "owner": "i.pla",
+      "plugins": [
+        "expo-secure-store",
+        [
+          "expo-av",
+          {
+            "microphonePermission": "Allow Hoccleve to access your microphone."
+          }
+        ],
+        [
+          "expo-document-picker",
+          {
+            "iCloudContainerEnvironment": "Production"
+          }
+        ],
+        ["@config-plugins/react-native-pdf", "11.0.0"],
+        "expo-web-browser"
+      ]
+    }
   }
 }
