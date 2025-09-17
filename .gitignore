@@ -13,18 +13,21 @@ expo-env.d.ts
 .kotlin/
 *.orig.*
 *.jks
-*.p8
 *.p12
 *.key
 *.mobileprovision
 
-# Firebase Admin Keys - ОЧЕНЬ ВАЖНО! НИКОГДА НЕ КОММИТЬ!
+# SECURITY - CRITICAL: These must be IGNORED!
+*.p8
+AuthKey*
 *-firebase-adminsdk-*.json
 *firebase-adminsdk*
 firebase-admin-key.json
 firebase-admin-*.json
+
+# Firebase configs - IGNORE for security
 google-services.json
-#GoogleService-Info.plist  
+GoogleService-Info.plist
 
 # Metro
 .metro-health-check*
