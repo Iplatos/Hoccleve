@@ -28,7 +28,10 @@ firebase-admin-*.json
 # Firebase configs - IGNORE for security
 google-services.json
 GoogleService-Info.plist
-
+GoogleService-Info.plist
+*.p8
+AuthKey*
+google-services.json
 # Metro
 .metro-health-check*
 
