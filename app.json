@@ -28,7 +28,7 @@
       },
       "versionCode": 2,
       "package": "com.ipla.hoccleve",
-      "googleServicesFile": "./google-services.json",
+      "googleServicesFile": "./android/app/google-services.json",
       "edgeToEdgeEnabled": true
     },
     "web": {
