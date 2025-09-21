@@ -34,6 +34,13 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
+    "hooks": {
+      "postPublish": [
+        {
+          "file": "scripts/setup-google-services.js"
+        }
+      ]
+    },
     "plugins": [
       "expo-secure-store",
       [
