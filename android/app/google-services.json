@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "292108824515",
+    "project_id": "hoccleve-f83b4",
+    "storage_bucket": "hoccleve-f83b4.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:292108824515:android:ab9637acd4f6979c46d776",
+        "android_client_info": {
+          "package_name": "com.ipla.hoccleve"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAK8mvrahLhNUOkrlMFWgnnJh1fwUMzm_E"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
