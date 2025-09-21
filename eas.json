@@ -26,7 +26,10 @@
     "production": {
       "autoIncrement": true,
       "android": {
-        "buildType": "app-bundle"
+        "buildType": "app-bundle",
+        "env": {
+          "GOOGLE_SERVICES_ANDROID": "ewogICJwcm9qZWN0X2luZm8iOiB7CiAgICAicHJvamVjdF9udW1iZXIiOiAiMjkyMTA4ODI0NTE1IiwKICAgICJwcm9qZWN0X2lkIjogImhvY2NsZXZlLWY4M2I0IiwKICAgICJzdG9yYWdlX2J1Y2tldCI6ICJob2NjbGV2ZS1mODNiNC5maXJlYmFzZXN0b3JhZ2UuYXBwIgogIH0sCiAgImNsaWVudCI6IFsKICAgIHsKICAgICAgImNsaWVudF9pbmZvIjogewogICAgICAgICJtb2JpbGVzZGtfYXBwX2lkIjogIjE6MjkyMTA4ODI0NTE1OmFuZHJvaWQ6YWI5NjM3YWNkNGY2OTc5YzQ2ZDc3NiIsCiAgICAgICAgImFuZHJvaWRfY2xpZW50X2luZm8iOiB7CiAgICAgICAgICAicGFja2FnZV9uYW1lIjogImNvbS5pcGxhLmhvY2NsZXZlIgogICAgICAgIH0KICAgICAgfSwKICAgICAgIm9hdXRoX2NsaWVudCI6IFtdLAogICAgICAiYXBpX2tleSI6IFsKICAgICAgICB7CiAgICAgICAgICAiY3VycmVudF9rZXkiOiAiQUl6YVN5QUs4bXZyYWhMaE5VT2tybE1GV2dubkpoMWZ3VU16bV9FIgogICAgICAgIH0KICAgICAgXSwKICAgICAgInNlcnZpY2VzIjogewogICAgICAgICJhcHBpbnZpdGVfc2VydmljZSI6IHsKICAgICAgICAgICJvdGhlcl9wbGF0Zm9ybV9vYXV0aF9jbGllbnQiOiBbXQogICAgICAgIH0KICAgICAgfQogICAgfQogIF0sCiAgImNvbmZpZ3VyYXRpb25fdmVyc2lvbiI6ICIxIgp9"
+        }
       },
       "ios": {
         "enterpriseProvisioning": "universal"
