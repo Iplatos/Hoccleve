@@ -2,7 +2,7 @@
   "expo": {
     "name": "Hoccleve",
     "slug": "Hoccleve_v1",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -16,6 +16,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.ipla.hoccleve",
       "googleServicesFile": "./GoogleService-Info.plist",
+      "buildNumber": "2",
       "infoPlist": {
         "NSMicrophoneUsageDescription": "Allow Hoccleve to access your microphone for audio recordings."
       }
@@ -25,6 +26,7 @@
         "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#ffffff"
       },
+      "versionCode": 2,
       "package": "com.ipla.hoccleve",
       "googleServicesFile": "./google-services.json",
       "edgeToEdgeEnabled": true
