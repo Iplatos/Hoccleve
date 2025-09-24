@@ -1,6 +1,7 @@
 {
   "expo": {
     "name": "Hoccleve",
+    "owner": "yourcompany-dev",
     "slug": "Hoccleve_v1",
     "version": "1.0.3",
     "orientation": "portrait",
@@ -29,12 +30,12 @@
       "versionCode": 3,
       "package": "com.ipla.hoccleve",
       "googleServicesFile": "./google-services.json",
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "permissions": ["android.permission.RECORD_AUDIO", "android.permission.MODIFY_AUDIO_SETTINGS"]
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
-
     "plugins": [
       "expo-secure-store",
       [
@@ -57,6 +58,5 @@
         "projectId": "0a573569-5028-4590-988c-da5e341a5fb1"
       }
     }
-  },
-  "owner": "yourcompany-dev"
+  }
 }

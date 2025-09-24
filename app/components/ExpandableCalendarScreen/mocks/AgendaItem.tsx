@@ -300,6 +300,7 @@ export const AgendaItem = (props: ItemProps) => {
         <Text></Text>
       ) : (
         <TouchableOpacity
+          disabled={!item.link_to_meeting}
           style={styles.btn}
           onPress={() => {
             handlePress(item.link_to_meeting)
