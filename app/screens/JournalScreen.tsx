@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import {
   Text,
   View,
@@ -7,30 +7,36 @@ import {
   Dimensions,
   Modal,
   TouchableOpacity,
-  FlatList,
 } from 'react-native'
-import { DropdownComponent } from '../components/DropdownComponent/DropdownComponent'
+import DropdownForJournal from '../components/DropdownComponent/DropdownForJournal/DropdownForJournal'
+import { useDispatch, useSelector } from 'react-redux'
+import { useAppDispatch, useAppSelector } from '../redux/hooks'
+import { fetchJournalData, setParams } from '../redux/slises/generalStudentJournalSlice'
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window')
 
 export const JournalScreen = () => {
+  const dispatch = useAppDispatch()
+  const { data, loading, error } = useAppSelector((state) => state.generalStudentJournal)
+  const [startDate, setStartDate] = useState('2025-09-01')
+  const [isInitialLoad, setIsInitialLoad] = useState(true)
+  const [endDate, setEndDate] = useState('2025-09-30')
+  useEffect(() => {
+    const loadInitialData = async () => {
+      await dispatch(fetchJournalData({ start_date: startDate, end_date: endDate }))
+      setIsInitialLoad(false)
+    }
+
+    loadInitialData()
+  }, [dispatch])
+  console.log(data)
+
   const statusData = [
     { label: 'Периоды по умолчанию', value: 0 },
     { label: 'Периоды по дням', value: 5 },
     { label: 'выбрать период', value: 10 },
   ]
-  const rowTitles = [
-    'Продукт A',
-    'Продукт B',
-    'Продукт C',
-    'Продукт D',
-    'Продукт E',
-    'Продукт F',
-    'Продукт G',
-    'Продукт H',
-    'Продукт I',
-    'Продукт J',
-  ]
+  const rowTitles = data?.directions.map((dir) => dir.name) || []
   const dates = [
     '01.01.2024',
     '02.01.2024',
@@ -44,36 +50,38 @@ export const JournalScreen = () => {
     '10.01.2024',
   ]
   const [status, setStatus] = useState(statusData[0].value)
+
   const generateData = () => {
-    return Array.from({ length: rowTitles.length }, () =>
+    return Array.from({ length: rowTitles?.length }, () =>
       Array.from({ length: dates.length }, () => Math.floor(Math.random() * 1000))
     )
   }
-  const [tempType, setTempType] = useState<
-    'Периоды по умолчанию' | 'Периоды по дням' | 'выбрать период'
-  >('Периоды по умолчанию')
+
   const [tableData, setTableData] = React.useState(generateData())
   const [isModalVisible, setIsModalVisible] = useState(false)
+  const [selectedCell, setSelectedCell] = useState(null)
 
   const FIXED_COLUMN_WIDTH = 120
   const DATA_COLUMN_WIDTH = 100
 
   const horizontalScrollRef = useRef(null)
-  const verticalDataScrollRef = useRef(null)
-  const verticalFixedScrollRef = useRef(null)
+  const datesHorizontalScrollRef = useRef(null)
+  const verticalScrollRef = useRef(null)
+  const fixedColumnScrollRef = useRef(null)
 
   const isScrolling = useRef(false)
   const totalDataWidth = DATA_COLUMN_WIDTH * dates.length
 
-  // Обработчик вертикальной прокрутки данных
-  const handleVerticalDataScroll = (event) => {
+  // Синхронизация горизонтальной прокрутки
+  const handleHorizontalScroll = (event) => {
     if (isScrolling.current) return
 
-    const offsetY = event.nativeEvent.contentOffset.y
+    const offsetX = event.nativeEvent.contentOffset.x
     isScrolling.current = true
 
-    if (verticalFixedScrollRef.current) {
-      verticalFixedScrollRef.current.scrollTo({ y: offsetY, animated: false })
+    // Синхронизируем заголовки дат
+    if (datesHorizontalScrollRef.current) {
+      datesHorizontalScrollRef.current.scrollTo({ x: offsetX, animated: false })
     }
 
     setTimeout(() => {
@@ -81,15 +89,16 @@ export const JournalScreen = () => {
     }, 10)
   }
 
-  // Обработчик вертикальной прокрутки фиксированного столбца
-  const handleVerticalFixedScroll = (event) => {
+  // Синхронизация горизонтальной прокрутки заголовков дат
+  const handleDatesHorizontalScroll = (event) => {
     if (isScrolling.current) return
 
-    const offsetY = event.nativeEvent.contentOffset.y
+    const offsetX = event.nativeEvent.contentOffset.x
     isScrolling.current = true
 
-    if (verticalDataScrollRef.current) {
-      verticalDataScrollRef.current.scrollTo({ y: offsetY, animated: false })
+    // Синхронизируем данные
+    if (horizontalScrollRef.current) {
+      horizontalScrollRef.current.scrollTo({ x: offsetX, animated: false })
     }
 
     setTimeout(() => {
@@ -97,41 +106,77 @@ export const JournalScreen = () => {
     }, 10)
   }
 
-  // Рендер строки данных
-  const renderDataRow = ({ item, index }) => (
-    <View style={styles.dataRow}>
-      {item.map((value, cellIndex) => (
-        <View key={cellIndex} style={[styles.dataCell, { width: DATA_COLUMN_WIDTH }]}>
-          <TouchableOpacity style={styles.modalButton} onPress={openModal}>
-            <Text style={styles.modalButtonText}>ⓘ</Text>
-          </TouchableOpacity>
-          <Text style={styles.cellText}>{value}</Text>
-        </View>
-      ))}
-    </View>
-  )
+  // Синхронизация вертикальной прокрутки
+  const handleVerticalScroll = (event) => {
+    if (isScrolling.current) return
 
-  const openModal = () => setIsModalVisible(true)
-  const closeModal = () => setIsModalVisible(false)
-  //   const [homeworkType, setHomeworkType] = useState<WorkType>('homework')
+    const offsetY = event.nativeEvent.contentOffset.y
+    isScrolling.current = true
+
+    // Синхронизируем фиксированный столбец
+    if (fixedColumnScrollRef.current) {
+      fixedColumnScrollRef.current.scrollTo({ y: offsetY, animated: false })
+    }
+
+    setTimeout(() => {
+      isScrolling.current = false
+    }, 10)
+  }
+
+  // Синхронизация прокрутки фиксированного столбца
+  const handleFixedColumnScroll = (event) => {
+    if (isScrolling.current) return
+
+    const offsetY = event.nativeEvent.contentOffset.y
+    isScrolling.current = true
+
+    // Синхронизируем основную таблицу
+    if (verticalScrollRef.current) {
+      verticalScrollRef.current.scrollTo({ y: offsetY, animated: false })
+    }
+
+    setTimeout(() => {
+      isScrolling.current = false
+    }, 10)
+  }
+
+  const openModal = (value, rowIndex, cellIndex) => {
+    setSelectedCell({
+      value,
+      product: rowTitles[rowIndex],
+      date: dates[cellIndex],
+      coordinates: `[${rowIndex}, ${cellIndex}]`,
+    })
+    setIsModalVisible(true)
+  }
+
+  const closeModal = () => {
+    setIsModalVisible(false)
+    setSelectedCell(null)
+  }
+
   return (
     <View style={styles.container}>
-      <View style={{ backgroundColor: 'red' }}>
-        <DropdownComponent setStatus={setStatus} setHomeworkType={setTempType} totalCount={3} />
-        <Text>asdad</Text>
+      <View style={styles.dropdownContainer}>
+        <DropdownForJournal />
+        <DropdownForJournal />
       </View>
+
+      {/* ОСНОВНОЙ КОНТЕЙНЕР ТАБЛИЦЫ */}
       <View style={styles.tableContainer}>
         {/* ФИКСИРОВАННЫЙ ЛЕВЫЙ СТОЛБЕЦ */}
         <View style={styles.fixedColumn}>
+          {/* Заголовок фиксированного столбца */}
           <View style={[styles.fixedHeader, { width: FIXED_COLUMN_WIDTH }]}>
             <Text style={styles.headerText}>Название</Text>
           </View>
 
+          {/* Фиксированные названия строк */}
           <ScrollView
-            ref={verticalFixedScrollRef}
+            ref={fixedColumnScrollRef}
             style={styles.fixedRows}
             showsVerticalScrollIndicator={false}
-            onScroll={handleVerticalFixedScroll}
+            onScroll={handleFixedColumnScroll}
             scrollEventThrottle={16}
           >
             {rowTitles.map((title, index) => (
@@ -142,36 +187,70 @@ export const JournalScreen = () => {
           </ScrollView>
         </View>
 
-        {/* ПРОКРУЧИВАЕМАЯ ЧАСТЬ */}
-        <View style={styles.scrollablePart}>
-          <ScrollView
-            ref={horizontalScrollRef}
-            horizontal
-            showsHorizontalScrollIndicator={true}
-            style={styles.horizontalScroll}
-          >
-            <View style={[styles.rightPartContainer, { width: totalDataWidth }]}>
-              {/* ЗАГОЛОВКИ ДАТ */}
-              <View style={styles.datesHeader}>
+        {/* ОСНОВНАЯ ПРОКРУЧИВАЕМАЯ ЧАСТЬ */}
+        <View style={styles.mainContent}>
+          {/* ФИКСИРОВАННЫЙ ВЕРХНИЙ РЯД С ДАТАМИ */}
+          <View style={styles.fixedDatesHeader}>
+            <ScrollView
+              ref={datesHorizontalScrollRef}
+              horizontal
+              showsHorizontalScrollIndicator={true}
+              style={styles.datesHorizontalScroll}
+              onScroll={handleDatesHorizontalScroll}
+              scrollEventThrottle={16}
+            >
+              <View style={[styles.datesHeader, { width: totalDataWidth }]}>
                 {dates.map((date, index) => (
                   <View key={index} style={[styles.dateHeader, { width: DATA_COLUMN_WIDTH }]}>
                     <Text style={styles.headerText}>{date}</Text>
                   </View>
                 ))}
               </View>
+            </ScrollView>
+          </View>
 
-              {/* ДАННЫЕ ТАБЛИЦЫ - используем FlatList вместо ScrollView */}
-              <FlatList
-                ref={verticalDataScrollRef}
-                data={tableData}
-                renderItem={renderDataRow}
-                keyExtractor={(item, index) => index.toString()}
-                showsVerticalScrollIndicator={true}
-                onScroll={handleVerticalDataScroll}
-                scrollEventThrottle={16}
-                style={styles.dataFlatList}
-              />
-            </View>
+          {/* ПРОКРУЧИВАЕМЫЕ ДАННЫЕ */}
+          <ScrollView
+            ref={verticalScrollRef}
+            style={styles.mainScroll}
+            showsVerticalScrollIndicator={true}
+            onScroll={handleVerticalScroll}
+            scrollEventThrottle={16}
+          >
+            {/* ГОРИЗОНТАЛЬНЫЙ SCROLLVIEW ДЛЯ ДАННЫХ */}
+            <ScrollView
+              ref={horizontalScrollRef}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.horizontalScroll}
+              onScroll={handleHorizontalScroll}
+              scrollEventThrottle={16}
+            >
+              {/* КОНТЕЙНЕР ДЛЯ ДАННЫХ */}
+              <View style={[styles.dataContent, { width: totalDataWidth }]}>
+                {/* ДАННЫЕ ТАБЛИЦЫ */}
+                <View style={styles.dataContainer}>
+                  {tableData.map((rowData, rowIndex) => (
+                    <View key={rowIndex} style={styles.dataRow}>
+                      {rowData.map((value, cellIndex) => (
+                        <View
+                          key={cellIndex}
+                          style={[styles.dataCell, { width: DATA_COLUMN_WIDTH }]}
+                        >
+                          <TouchableOpacity
+                            style={styles.modalButton}
+                            onPress={() => openModal(value, rowIndex, cellIndex)}
+                          >
+                            <Text style={styles.modalButtonText}>ⓘ</Text>
+                          </TouchableOpacity>
+                          <Text style={styles.cellText}>{value}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  ))}
+                </View>
+              </View>
+            </ScrollView>
           </ScrollView>
         </View>
       </View>
@@ -185,14 +264,32 @@ export const JournalScreen = () => {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Информация</Text>
-            <Text style={styles.modalText}>
-              Это модальное окно занимает 30% ширины и 33% высоты экрана
-            </Text>
+            <Text style={styles.modalTitle}>Информация о ячейке</Text>
+
+            {selectedCell && (
+              <>
+                <Text style={styles.modalText}>
+                  <Text style={styles.modalLabel}>Продукт: </Text>
+                  {selectedCell.product}
+                </Text>
+                <Text style={styles.modalText}>
+                  <Text style={styles.modalLabel}>Дата: </Text>
+                  {selectedCell.date}
+                </Text>
+                <Text style={styles.modalText}>
+                  <Text style={styles.modalLabel}>Значение: </Text>
+                  {selectedCell.value}
+                </Text>
+                <Text style={styles.modalText}>
+                  <Text style={styles.modalLabel}>Координаты: </Text>
+                  {selectedCell.coordinates}
+                </Text>
+              </>
+            )}
 
             <View style={styles.modalButtons}>
               <TouchableOpacity style={styles.cancelButton} onPress={closeModal}>
-                <Text style={styles.cancelButtonText}>Отмена</Text>
+                <Text style={styles.cancelButtonText}>Закрыть</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.confirmButton} onPress={closeModal}>
                 <Text style={styles.confirmButtonText}>ОК</Text>
@@ -210,10 +307,11 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
   },
-  modalButton: { position: 'absolute', right: 10, top: 1 },
-  modalButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+  dropdownContainer: {
+    padding: 15,
+    backgroundColor: '#f8f8f8',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
   },
   tableContainer: {
     flex: 1,
@@ -224,42 +322,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRightWidth: 2,
     borderRightColor: '#ccc',
-    zIndex: 2,
-  },
-
-  title: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 20,
-  },
-  dropdown: {
-    height: 50,
-    borderColor: 'gray',
-    borderWidth: 0.5,
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    marginBottom: 20,
-  },
-  placeholderStyle: {
-    fontSize: 16,
-    color: '#999',
-  },
-  selectedTextStyle: {
-    fontSize: 16,
-    color: '#000',
-  },
-  iconStyle: {
-    width: 20,
-    height: 20,
-  },
-  inputSearchStyle: {
-    height: 40,
-    fontSize: 16,
-  },
-  selectedValue: {
-    marginTop: 20,
-    fontSize: 16,
-    color: '#333',
+    zIndex: 3,
   },
   fixedHeader: {
     height: 50,
@@ -280,22 +343,24 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
   },
-  scrollablePart: {
+  mainContent: {
     flex: 1,
-  },
-  horizontalScroll: {
-    flex: 1,
-  },
-  rightPartContainer: {
     flexDirection: 'column',
+  },
+  fixedDatesHeader: {
+    height: 50,
+    backgroundColor: '#fff',
+    borderBottomWidth: 2,
+    borderBottomColor: '#ccc',
+    zIndex: 2,
+  },
+  datesHorizontalScroll: {
     flex: 1,
   },
   datesHeader: {
-    height: 50,
     flexDirection: 'row',
+    height: 50,
     backgroundColor: '#f0f0f0',
-    borderBottomWidth: 2,
-    borderBottomColor: '#ccc',
   },
   dateHeader: {
     height: 50,
@@ -304,8 +369,17 @@ const styles = StyleSheet.create({
     borderRightWidth: 1,
     borderRightColor: '#ddd',
   },
-  dataFlatList: {
+  mainScroll: {
     flex: 1,
+  },
+  horizontalScroll: {
+    flex: 1,
+  },
+  dataContent: {
+    flexDirection: 'column',
+  },
+  dataContainer: {
+    flexDirection: 'column',
   },
   dataRow: {
     flexDirection: 'row',
@@ -319,6 +393,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRightWidth: 1,
     borderRightColor: '#eee',
+    position: 'relative',
+  },
+  modalButton: {
+    position: 'absolute',
+    right: 5,
+    top: 5,
+    zIndex: 1,
+  },
+  modalButtonText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#007AFF',
   },
   headerText: {
     fontWeight: 'bold',
@@ -337,8 +423,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalContent: {
-    width: SCREEN_WIDTH * 0.3,
-    height: SCREEN_HEIGHT * 0.33,
+    width: SCREEN_WIDTH * 0.8,
+    minHeight: SCREEN_HEIGHT * 0.3,
     backgroundColor: 'white',
     borderRadius: 12,
     padding: 20,
@@ -351,19 +437,23 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 10,
+    marginBottom: 15,
     textAlign: 'center',
+    color: '#333',
   },
   modalText: {
     fontSize: 14,
-    textAlign: 'center',
-    marginBottom: 20,
+    marginBottom: 8,
     lineHeight: 20,
+  },
+  modalLabel: {
+    fontWeight: '600',
+    color: '#555',
   },
   modalButtons: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 'auto',
+    marginTop: 20,
   },
   cancelButton: {
     flex: 1,
