@@ -84,7 +84,7 @@ export const AppNavigator = () => {
       <Stack.Screen name={ROUTES.CHAT} component={ChatScreen} />
       {/*<Stack.Screen name={ROUTES.CHAT} component={ChatScreenNew}/>*/}
 
-      <Stack.Screen name={ROUTES.CHAT_DETAIL} component={ChatDetailScreen} />
+      {/* <Stack.Screen name={ROUTES.CHAT_DETAIL} component={ChatDetailScreen} /> */}
       <Stack.Screen name={ROUTES.NOT_FOUND} component={NotFoundScreen} />
 
       <Stack.Screen name="Login" component={LoginScreen} />
