@@ -17,10 +17,11 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window')
 
 export const JournalScreen = () => {
   const dispatch = useAppDispatch()
-  const { data, loading, error } = useAppSelector((state) => state.generalStudentJournal)
+  const { data: dataUS, loading, error } = useAppSelector((state) => state.generalStudentJournal)
   const [startDate, setStartDate] = useState('2025-09-01')
   const [isInitialLoad, setIsInitialLoad] = useState(true)
-  const [endDate, setEndDate] = useState('2025-09-30')
+  const [endDate, setEndDate] = useState('2025-09-05')
+
   useEffect(() => {
     const loadInitialData = async () => {
       await dispatch(fetchJournalData({ start_date: startDate, end_date: endDate }))
@@ -28,41 +29,146 @@ export const JournalScreen = () => {
     }
 
     loadInitialData()
+    console.log(dataUS)
   }, [dispatch])
-  console.log(data)
+  const testData = {
+    directions: [
+      {
+        id: '5',
+        name: 'Завтрак',
+        absences: 3,
+        attendance: 0,
+        dates: {
+          '38115': { grades: [], status: null, comment: null },
+        },
+        gpa: null,
+        group_id: 378,
+        visits: 0,
+      },
+      {
+        id: '227',
+        name: 'Русский язык/Литература 5 класс',
+        absences: 6,
+        attendance: 0,
+        dates: {
+          '38159': { grades: [5, 4], status: 'present', comment: 'Хорошая работа' },
+          '38291': { grades: [], status: null, comment: null },
+          '39215': { grades: [], status: null, comment: null },
+          '39303': { grades: [], status: null, comment: null },
+          '61445': { grades: [], status: null, comment: null },
+          '61577': { grades: [], status: null, comment: null },
+        },
+        gpa: null,
+        group_id: 349,
+        visits: 0,
+      },
+      {
+        id: '228',
+        name: '5 класс: Литература (старое)',
+        absences: 6,
+        attendance: 0,
+        dates: {
+          '38203': { grades: [3], status: 'absent', comment: 'Отсутствовал' },
+          '45116': { grades: [], status: null, comment: null },
+          '45160': { grades: [], status: null, comment: null },
+          '45204': { grades: [], status: null, comment: null },
+          '61489': { grades: [], status: null, comment: null },
+          '61621': { grades: [], status: null, comment: null },
+        },
+        gpa: null,
+        group_id: 345,
+        visits: 0,
+      },
+    ],
+    dates: [
+      {
+        id: '38115',
+        date: '2025-09-02',
+        ids: ['5'],
+        lesson_topic: 'Утренний завтрак',
+        comment_to_dz: null,
+      },
+      {
+        id: '38159',
+        date: '2025-09-02',
+        ids: ['227'],
+        lesson_topic: 'Литературное чтение',
+        comment_to_dz: 'Выучить стих',
+      },
+      {
+        id: '38203',
+        date: '2025-09-02',
+        ids: ['228'],
+        lesson_topic: 'Русская литература',
+        comment_to_dz: 'Прочитать рассказ',
+      },
+      {
+        id: '38291',
+        date: '2025-09-02',
+        ids: ['227'],
+        lesson_topic: 'Правописание',
+        comment_to_dz: null,
+      },
+      {
+        id: '38775',
+        date: '2025-09-03',
+        ids: ['5'],
+        lesson_topic: 'Второй завтрак',
+        comment_to_dz: null,
+      },
+      {
+        id: '38995',
+        date: '2025-09-03',
+        ids: ['227'],
+        lesson_topic: 'Грамматика',
+        comment_to_dz: 'Упражнения 1-5',
+      },
+      {
+        id: '39215',
+        date: '2025-09-03',
+        ids: ['227'],
+        lesson_topic: 'Чтение',
+        comment_to_dz: null,
+      },
+      {
+        id: '39303',
+        date: '2025-09-03',
+        ids: ['227'],
+        lesson_topic: 'Сочинение',
+        comment_to_dz: null,
+      },
+      {
+        id: '45116',
+        date: '2025-09-02',
+        ids: ['228'],
+        lesson_topic: 'Классическая литература',
+        comment_to_dz: null,
+      },
+      {
+        id: '45160',
+        date: '2025-09-03',
+        ids: ['228'],
+        lesson_topic: 'Поэзия',
+        comment_to_dz: null,
+      },
+      { id: '45204', date: '2025-09-03', ids: ['228'], lesson_topic: 'Проза', comment_to_dz: null },
+    ],
+  }
+
+  const data = dataUS !== null && dataUS !== undefined ? dataUS : testData
 
   const statusData = [
     { label: 'Периоды по умолчанию', value: 0 },
     { label: 'Периоды по дням', value: 5 },
     { label: 'выбрать период', value: 10 },
   ]
-  const rowTitles = data?.directions.map((dir) => dir.name) || []
-  const dates = [
-    '01.01.2024',
-    '02.01.2024',
-    '03.01.2024',
-    '04.01.2024',
-    '05.01.2024',
-    '06.01.2024',
-    '07.01.2024',
-    '08.01.2024',
-    '09.01.2024',
-    '10.01.2024',
-  ]
+
   const [status, setStatus] = useState(statusData[0].value)
-
-  const generateData = () => {
-    return Array.from({ length: rowTitles?.length }, () =>
-      Array.from({ length: dates.length }, () => Math.floor(Math.random() * 1000))
-    )
-  }
-
-  const [tableData, setTableData] = React.useState(generateData())
   const [isModalVisible, setIsModalVisible] = useState(false)
   const [selectedCell, setSelectedCell] = useState(null)
 
-  const FIXED_COLUMN_WIDTH = 120
-  const DATA_COLUMN_WIDTH = 100
+  const FIXED_COLUMN_WIDTH = 100
+  let DATA_COLUMN_WIDTH = 50
 
   const horizontalScrollRef = useRef(null)
   const datesHorizontalScrollRef = useRef(null)
@@ -70,16 +176,58 @@ export const JournalScreen = () => {
   const fixedColumnScrollRef = useRef(null)
 
   const isScrolling = useRef(false)
+
+  // Получаем уникальные даты и сортируем их
+  const dates = [...new Set(data.dates.map((item) => item.date))].sort()
   const totalDataWidth = DATA_COLUMN_WIDTH * dates.length
+  if (dates.length < 6) {
+    DATA_COLUMN_WIDTH = 282 / dates.length
+  }
+  // Функция для получения данных урока по предмету и дате
+  const getLessonData = (directionId, date) => {
+    // Находим ID даты для этой даты
+    const dateObj = data.dates.find((d) => d.date === date && d.ids.includes(directionId))
+    if (!dateObj) return null
+
+    // Находим направление
+    const direction = data.directions.find((dir) => dir.id === directionId)
+    if (!direction || !direction.dates) return null
+
+    return direction.dates[dateObj.id] || null
+  }
+
+  // Функция для отображения оценок
+  const renderGrades = (grades) => {
+    if (!grades || grades.length === 0) return '-'
+    return grades.join(', ')
+  }
+
+  // Функция для отображения статуса
+  const renderStatus = (status) => {
+    switch (status) {
+      case 'present':
+        return '✓'
+      case 'absent':
+        return '✗'
+      case 'late':
+        return '⌚'
+      default:
+        return '-'
+    }
+  }
+
+  // Функция для получения темы урока
+  const getLessonTopic = (directionId, date) => {
+    const dateObj = data.dates.find((d) => d.date === date && d.ids.includes(directionId))
+    return dateObj?.lesson_topic || '-'
+  }
 
   // Синхронизация горизонтальной прокрутки
   const handleHorizontalScroll = (event) => {
     if (isScrolling.current) return
-
     const offsetX = event.nativeEvent.contentOffset.x
     isScrolling.current = true
 
-    // Синхронизируем заголовки дат
     if (datesHorizontalScrollRef.current) {
       datesHorizontalScrollRef.current.scrollTo({ x: offsetX, animated: false })
     }
@@ -89,14 +237,11 @@ export const JournalScreen = () => {
     }, 10)
   }
 
-  // Синхронизация горизонтальной прокрутки заголовков дат
   const handleDatesHorizontalScroll = (event) => {
     if (isScrolling.current) return
-
     const offsetX = event.nativeEvent.contentOffset.x
     isScrolling.current = true
 
-    // Синхронизируем данные
     if (horizontalScrollRef.current) {
       horizontalScrollRef.current.scrollTo({ x: offsetX, animated: false })
     }
@@ -106,31 +251,11 @@ export const JournalScreen = () => {
     }, 10)
   }
 
-  // Синхронизация вертикальной прокрутки
-  const handleVerticalScroll = (event) => {
-    if (isScrolling.current) return
-
-    const offsetY = event.nativeEvent.contentOffset.y
-    isScrolling.current = true
-
-    // Синхронизируем фиксированный столбец
-    if (fixedColumnScrollRef.current) {
-      fixedColumnScrollRef.current.scrollTo({ y: offsetY, animated: false })
-    }
-
-    setTimeout(() => {
-      isScrolling.current = false
-    }, 10)
-  }
-
-  // Синхронизация прокрутки фиксированного столбца
   const handleFixedColumnScroll = (event) => {
     if (isScrolling.current) return
-
     const offsetY = event.nativeEvent.contentOffset.y
     isScrolling.current = true
 
-    // Синхронизируем основную таблицу
     if (verticalScrollRef.current) {
       verticalScrollRef.current.scrollTo({ y: offsetY, animated: false })
     }
@@ -140,12 +265,14 @@ export const JournalScreen = () => {
     }, 10)
   }
 
-  const openModal = (value, rowIndex, cellIndex) => {
+  const openModal = (direction, date, lessonData, topic) => {
     setSelectedCell({
-      value,
-      product: rowTitles[rowIndex],
-      date: dates[cellIndex],
-      coordinates: `[${rowIndex}, ${cellIndex}]`,
+      direction: direction.name,
+      date: date,
+      topic: topic,
+      grades: lessonData?.grades || [],
+      status: lessonData?.status || 'нет данных',
+      comment: lessonData?.comment || 'нет комментария',
     })
     setIsModalVisible(true)
   }
@@ -155,23 +282,29 @@ export const JournalScreen = () => {
     setSelectedCell(null)
   }
 
+  const formatDate = (dateStr) => {
+    const date = new Date(dateStr)
+    return `${date.getDate().toString().padStart(2, '0')}.${(date.getMonth() + 1)
+      .toString()
+      .padStart(2, '0')}`
+  }
+  if (isInitialLoad) {
+    return <Text>Loading</Text>
+  }
   return (
-    <View style={styles.container}>
-      <View style={styles.dropdownContainer}>
+    <ScrollView style={styles.container}>
+      {/* <View style={styles.dropdownContainer}>
         <DropdownForJournal />
         <DropdownForJournal />
-      </View>
+      </View> */}
 
-      {/* ОСНОВНОЙ КОНТЕЙНЕР ТАБЛИЦЫ */}
       <View style={styles.tableContainer}>
-        {/* ФИКСИРОВАННЫЙ ЛЕВЫЙ СТОЛБЕЦ */}
         <View style={styles.fixedColumn}>
           {/* Заголовок фиксированного столбца */}
           <View style={[styles.fixedHeader, { width: FIXED_COLUMN_WIDTH }]}>
-            <Text style={styles.headerText}>Название</Text>
+            <Text style={styles.headerText}>Предметы</Text>
           </View>
 
-          {/* Фиксированные названия строк */}
           <ScrollView
             ref={fixedColumnScrollRef}
             style={styles.fixedRows}
@@ -179,17 +312,17 @@ export const JournalScreen = () => {
             onScroll={handleFixedColumnScroll}
             scrollEventThrottle={16}
           >
-            {rowTitles.map((title, index) => (
-              <View key={index} style={[styles.fixedCell, { width: FIXED_COLUMN_WIDTH }]}>
-                <Text style={styles.cellText}>{title}</Text>
+            {data.directions.map((direction, index) => (
+              <View key={direction.id} style={[styles.fixedCell, { width: FIXED_COLUMN_WIDTH }]}>
+                <Text style={styles.cellText} numberOfLines={2}>
+                  {direction.name}
+                </Text>
               </View>
             ))}
           </ScrollView>
         </View>
 
-        {/* ОСНОВНАЯ ПРОКРУЧИВАЕМАЯ ЧАСТЬ */}
         <View style={styles.mainContent}>
-          {/* ФИКСИРОВАННЫЙ ВЕРХНИЙ РЯД С ДАТАМИ */}
           <View style={styles.fixedDatesHeader}>
             <ScrollView
               ref={datesHorizontalScrollRef}
@@ -202,22 +335,14 @@ export const JournalScreen = () => {
               <View style={[styles.datesHeader, { width: totalDataWidth }]}>
                 {dates.map((date, index) => (
                   <View key={index} style={[styles.dateHeader, { width: DATA_COLUMN_WIDTH }]}>
-                    <Text style={styles.headerText}>{date}</Text>
+                    <Text style={styles.headerText}>{formatDate(date)}</Text>
                   </View>
                 ))}
               </View>
             </ScrollView>
           </View>
 
-          {/* ПРОКРУЧИВАЕМЫЕ ДАННЫЕ */}
-          <ScrollView
-            ref={verticalScrollRef}
-            style={styles.mainScroll}
-            showsVerticalScrollIndicator={true}
-            onScroll={handleVerticalScroll}
-            scrollEventThrottle={16}
-          >
-            {/* ГОРИЗОНТАЛЬНЫЙ SCROLLVIEW ДЛЯ ДАННЫХ */}
+          <View style={styles.mainScroll}>
             <ScrollView
               ref={horizontalScrollRef}
               horizontal
@@ -226,36 +351,45 @@ export const JournalScreen = () => {
               onScroll={handleHorizontalScroll}
               scrollEventThrottle={16}
             >
-              {/* КОНТЕЙНЕР ДЛЯ ДАННЫХ */}
               <View style={[styles.dataContent, { width: totalDataWidth }]}>
-                {/* ДАННЫЕ ТАБЛИЦЫ */}
                 <View style={styles.dataContainer}>
-                  {tableData.map((rowData, rowIndex) => (
-                    <View key={rowIndex} style={styles.dataRow}>
-                      {rowData.map((value, cellIndex) => (
-                        <View
-                          key={cellIndex}
-                          style={[styles.dataCell, { width: DATA_COLUMN_WIDTH }]}
-                        >
-                          <TouchableOpacity
-                            style={styles.modalButton}
-                            onPress={() => openModal(value, rowIndex, cellIndex)}
+                  {data.directions.map((direction, rowIndex) => (
+                    <View key={direction.id} style={styles.dataRow}>
+                      {dates.map((date, cellIndex) => {
+                        const lessonData = getLessonData(direction.id, date)
+                        const topic = getLessonTopic(direction.id, date)
+
+                        return (
+                          <View
+                            key={cellIndex}
+                            style={[styles.dataCell, { width: DATA_COLUMN_WIDTH }]}
                           >
-                            <Text style={styles.modalButtonText}>ⓘ</Text>
-                          </TouchableOpacity>
-                          <Text style={styles.cellText}>{value}</Text>
-                        </View>
-                      ))}
+                            <TouchableOpacity
+                              style={styles.cellContent}
+                              onPress={() => openModal(direction, date, lessonData, topic)}
+                            >
+                              <Text style={styles.gradesText}>
+                                {renderGrades(lessonData?.grades)}
+                              </Text>
+                              <Text style={styles.statusText}>
+                                {renderStatus(lessonData?.status)}
+                              </Text>
+                              {lessonData?.comment && (
+                                <Text style={styles.commentIndicator}>💬</Text>
+                              )}
+                            </TouchableOpacity>
+                          </View>
+                        )
+                      })}
                     </View>
                   ))}
                 </View>
               </View>
             </ScrollView>
-          </ScrollView>
+          </View>
         </View>
       </View>
 
-      {/* Модальное окно */}
       <Modal
         visible={isModalVisible}
         animationType="fade"
@@ -264,41 +398,56 @@ export const JournalScreen = () => {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Информация о ячейке</Text>
+            <Text style={styles.modalTitle}>Информация об уроке</Text>
 
             {selectedCell && (
               <>
-                <Text style={styles.modalText}>
-                  <Text style={styles.modalLabel}>Продукт: </Text>
-                  {selectedCell.product}
-                </Text>
-                <Text style={styles.modalText}>
-                  <Text style={styles.modalLabel}>Дата: </Text>
-                  {selectedCell.date}
-                </Text>
-                <Text style={styles.modalText}>
-                  <Text style={styles.modalLabel}>Значение: </Text>
-                  {selectedCell.value}
-                </Text>
-                <Text style={styles.modalText}>
-                  <Text style={styles.modalLabel}>Координаты: </Text>
-                  {selectedCell.coordinates}
-                </Text>
+                <View style={styles.modalRow}>
+                  <Text style={styles.modalLabel}>Предмет:</Text>
+                  <Text style={styles.modalValue}>{selectedCell.direction}</Text>
+                </View>
+                <View style={styles.modalRow}>
+                  <Text style={styles.modalLabel}>Дата:</Text>
+                  <Text style={styles.modalValue}>{selectedCell.date}</Text>
+                </View>
+                <View style={styles.modalRow}>
+                  <Text style={styles.modalLabel}>Тема урока:</Text>
+                  <Text style={styles.modalValue}>{selectedCell.topic}</Text>
+                </View>
+                <View style={styles.modalRow}>
+                  <Text style={styles.modalLabel}>Оценки:</Text>
+                  <Text style={styles.modalValue}>
+                    {selectedCell.grades.length > 0 ? selectedCell.grades.join(', ') : 'нет оценок'}
+                  </Text>
+                </View>
+                <View style={styles.modalRow}>
+                  <Text style={styles.modalLabel}>Статус:</Text>
+                  <Text style={styles.modalValue}>
+                    {selectedCell.status === 'present'
+                      ? 'Присутствовал'
+                      : selectedCell.status === 'absent'
+                      ? 'Отсутствовал'
+                      : selectedCell.status === 'late'
+                      ? 'Опоздал'
+                      : 'нет данных'}
+                  </Text>
+                </View>
+                <View style={styles.modalRow}>
+                  <Text style={styles.modalLabel}>Комментарий:</Text>
+                  <Text style={styles.modalValue}>{selectedCell.comment}</Text>
+                </View>
               </>
             )}
 
             <View style={styles.modalButtons}>
-              <TouchableOpacity style={styles.cancelButton} onPress={closeModal}>
-                <Text style={styles.cancelButtonText}>Закрыть</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.confirmButton} onPress={closeModal}>
-                <Text style={styles.confirmButtonText}>ОК</Text>
+              <TouchableOpacity style={styles.closeButton} onPress={closeModal}>
+                <Text style={styles.closeButtonText}>Закрыть</Text>
               </TouchableOpacity>
             </View>
           </View>
         </View>
       </Modal>
-    </View>
+    </ScrollView>
   )
 }
 
@@ -312,13 +461,16 @@ const styles = StyleSheet.create({
     backgroundColor: '#f8f8f8',
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
   tableContainer: {
     flex: 1,
     flexDirection: 'row',
+    minHeight: 400,
   },
   fixedColumn: {
-    width: 120,
+    minWidth: 100,
     backgroundColor: '#fff',
     borderRightWidth: 2,
     borderRightColor: '#ccc',
@@ -336,12 +488,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   fixedCell: {
-    height: 50,
+    height: 60,
     backgroundColor: '#f9f9f9',
     justifyContent: 'center',
     alignItems: 'center',
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
+    paddingHorizontal: 5,
   },
   mainContent: {
     flex: 1,
@@ -349,7 +502,6 @@ const styles = StyleSheet.create({
   },
   fixedDatesHeader: {
     height: 50,
-    backgroundColor: '#fff',
     borderBottomWidth: 2,
     borderBottomColor: '#ccc',
     zIndex: 2,
@@ -360,7 +512,6 @@ const styles = StyleSheet.create({
   datesHeader: {
     flexDirection: 'row',
     height: 50,
-    backgroundColor: '#f0f0f0',
   },
   dateHeader: {
     height: 50,
@@ -383,28 +534,38 @@ const styles = StyleSheet.create({
   },
   dataRow: {
     flexDirection: 'row',
-    height: 50,
+    height: 60,
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
   },
   dataCell: {
-    height: 50,
+    height: 60,
     justifyContent: 'center',
     alignItems: 'center',
     borderRightWidth: 1,
     borderRightColor: '#eee',
-    position: 'relative',
   },
-  modalButton: {
-    position: 'absolute',
-    right: 5,
-    top: 5,
-    zIndex: 1,
+  cellContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 5,
   },
-  modalButtonText: {
+  gradesText: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#007AFF',
+    color: '#333',
+    marginBottom: 2,
+  },
+  statusText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  commentIndicator: {
+    position: 'absolute',
+    top: 2,
+    right: 2,
+    fontSize: 10,
   },
   headerText: {
     fontWeight: 'bold',
@@ -414,6 +575,7 @@ const styles = StyleSheet.create({
   cellText: {
     fontSize: 12,
     textAlign: 'center',
+    lineHeight: 14,
   },
   // Стили для модального окна
   modalOverlay: {
@@ -421,10 +583,10 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
+    padding: 20,
   },
   modalContent: {
-    width: SCREEN_WIDTH * 0.8,
-    minHeight: SCREEN_HEIGHT * 0.3,
+    width: '100%',
     backgroundColor: 'white',
     borderRadius: 12,
     padding: 20,
@@ -437,47 +599,40 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 15,
+    marginBottom: 20,
     textAlign: 'center',
     color: '#333',
   },
-  modalText: {
-    fontSize: 14,
-    marginBottom: 8,
-    lineHeight: 20,
+  modalRow: {
+    flexDirection: 'row',
+    marginBottom: 12,
+    alignItems: 'flex-start',
   },
   modalLabel: {
     fontWeight: '600',
     color: '#555',
+    width: 100,
+    fontSize: 14,
+  },
+  modalValue: {
+    flex: 1,
+    fontSize: 14,
+    color: '#333',
+    flexWrap: 'wrap',
   },
   modalButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
     marginTop: 20,
   },
-  cancelButton: {
-    flex: 1,
-    backgroundColor: '#f0f0f0',
-    paddingVertical: 10,
-    borderRadius: 6,
-    marginRight: 10,
-  },
-  cancelButtonText: {
-    textAlign: 'center',
-    color: '#333',
-    fontWeight: '500',
-  },
-  confirmButton: {
-    flex: 1,
+  closeButton: {
     backgroundColor: '#007AFF',
-    paddingVertical: 10,
+    paddingVertical: 12,
     borderRadius: 6,
-    marginLeft: 10,
   },
-  confirmButtonText: {
+  closeButtonText: {
     textAlign: 'center',
     color: 'white',
     fontWeight: '500',
+    fontSize: 16,
   },
 })
 
