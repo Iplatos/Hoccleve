@@ -15,12 +15,62 @@ import { fetchJournalData, setParams } from '../redux/slises/generalStudentJourn
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window')
 
+// Функция для удаления дубликатов по ID
+const removeDuplicates = (dates) => {
+  const newDates = []
+  dates.forEach((date) => {
+    if (!newDates.some((newDate) => newDate.id == date.id)) newDates.push(date)
+  })
+  return newDates
+}
+const getSortByField = (field) => (el1, el2) => {
+  if (el1[field] > el2[field]) return 1
+  if (el1[field] < el2[field]) return -1
+  if (el1[field] == el2[field]) return 0
+}
+// Функция для объединения дат
+const getUnionDate = (dates) => {
+  const newDates = []
+  dates.forEach((date) => {
+    date.ids.forEach((id) => {
+      const freeDateInNewDate = newDates.find(
+        (currentDate) => currentDate.date == date.date && !currentDate.ids.includes(id)
+      )
+      if (freeDateInNewDate) {
+        freeDateInNewDate.ids.push(id)
+        freeDateInNewDate.directionsToDates[id] = date.id
+        freeDateInNewDate.directionsToTooltip[id] = {
+          commentDZ: date.comment_to_dz,
+          topic: date.lesson_topic,
+        }
+      } else {
+        newDates.push({
+          ...date,
+          ids: date.ids.map((el) => el),
+          directionsToDates: date.ids.reduce((res, el) => {
+            res[el] = date.id
+            return res
+          }, {}),
+          directionsToTooltip: date.ids.reduce((res, el) => {
+            res[el] = {
+              commentDZ: date.comment_to_dz,
+              topic: date.lesson_topic,
+            }
+            return res
+          }, {}),
+        })
+      }
+    })
+  })
+  return newDates
+}
+
 export const JournalScreen = () => {
   const dispatch = useAppDispatch()
   const { data: dataUS, loading, error } = useAppSelector((state) => state.generalStudentJournal)
-  const [startDate, setStartDate] = useState('2025-09-01')
+  const [startDate, setStartDate] = useState('2025-10-01')
   const [isInitialLoad, setIsInitialLoad] = useState(true)
-  const [endDate, setEndDate] = useState('2025-09-05')
+  const [endDate, setEndDate] = useState('2025-10-02')
 
   useEffect(() => {
     const loadInitialData = async () => {
@@ -31,144 +81,18 @@ export const JournalScreen = () => {
     loadInitialData()
     console.log(dataUS)
   }, [dispatch])
-  const testData = {
-    directions: [
-      {
-        id: '5',
-        name: 'Завтрак',
-        absences: 3,
-        attendance: 0,
-        dates: {
-          '38115': { grades: [], status: null, comment: null },
-        },
-        gpa: null,
-        group_id: 378,
-        visits: 0,
-      },
-      {
-        id: '227',
-        name: 'Русский язык/Литература 5 класс',
-        absences: 6,
-        attendance: 0,
-        dates: {
-          '38159': { grades: [5, 4], status: 'present', comment: 'Хорошая работа' },
-          '38291': { grades: [], status: null, comment: null },
-          '39215': { grades: [], status: null, comment: null },
-          '39303': { grades: [], status: null, comment: null },
-          '61445': { grades: [], status: null, comment: null },
-          '61577': { grades: [], status: null, comment: null },
-        },
-        gpa: null,
-        group_id: 349,
-        visits: 0,
-      },
-      {
-        id: '228',
-        name: '5 класс: Литература (старое)',
-        absences: 6,
-        attendance: 0,
-        dates: {
-          '38203': { grades: [3], status: 'absent', comment: 'Отсутствовал' },
-          '45116': { grades: [], status: null, comment: null },
-          '45160': { grades: [], status: null, comment: null },
-          '45204': { grades: [], status: null, comment: null },
-          '61489': { grades: [], status: null, comment: null },
-          '61621': { grades: [], status: null, comment: null },
-        },
-        gpa: null,
-        group_id: 345,
-        visits: 0,
-      },
-    ],
-    dates: [
-      {
-        id: '38115',
-        date: '2025-09-02',
-        ids: ['5'],
-        lesson_topic: 'Утренний завтрак',
-        comment_to_dz: null,
-      },
-      {
-        id: '38159',
-        date: '2025-09-02',
-        ids: ['227'],
-        lesson_topic: 'Литературное чтение',
-        comment_to_dz: 'Выучить стих',
-      },
-      {
-        id: '38203',
-        date: '2025-09-02',
-        ids: ['228'],
-        lesson_topic: 'Русская литература',
-        comment_to_dz: 'Прочитать рассказ',
-      },
-      {
-        id: '38291',
-        date: '2025-09-02',
-        ids: ['227'],
-        lesson_topic: 'Правописание',
-        comment_to_dz: null,
-      },
-      {
-        id: '38775',
-        date: '2025-09-03',
-        ids: ['5'],
-        lesson_topic: 'Второй завтрак',
-        comment_to_dz: null,
-      },
-      {
-        id: '38995',
-        date: '2025-09-03',
-        ids: ['227'],
-        lesson_topic: 'Грамматика',
-        comment_to_dz: 'Упражнения 1-5',
-      },
-      {
-        id: '39215',
-        date: '2025-09-03',
-        ids: ['227'],
-        lesson_topic: 'Чтение',
-        comment_to_dz: null,
-      },
-      {
-        id: '39303',
-        date: '2025-09-03',
-        ids: ['227'],
-        lesson_topic: 'Сочинение',
-        comment_to_dz: null,
-      },
-      {
-        id: '45116',
-        date: '2025-09-02',
-        ids: ['228'],
-        lesson_topic: 'Классическая литература',
-        comment_to_dz: null,
-      },
-      {
-        id: '45160',
-        date: '2025-09-03',
-        ids: ['228'],
-        lesson_topic: 'Поэзия',
-        comment_to_dz: null,
-      },
-      { id: '45204', date: '2025-09-03', ids: ['228'], lesson_topic: 'Проза', comment_to_dz: null },
-    ],
-  }
 
   const data = dataUS !== null && dataUS !== undefined ? dataUS : testData
 
-  const statusData = [
-    { label: 'Периоды по умолчанию', value: 0 },
-    { label: 'Периоды по дням', value: 5 },
-    { label: 'выбрать период', value: 10 },
-  ]
+  // Применяем обе функции: сначала удаляем дубликаты, потом объединяем даты
 
-  const [status, setStatus] = useState(statusData[0].value)
+  const unionDates = getUnionDate(removeDuplicates(data.dates)).slice().sort(getSortByField('date'))
+
   const [isModalVisible, setIsModalVisible] = useState(false)
   const [selectedCell, setSelectedCell] = useState(null)
 
   const FIXED_COLUMN_WIDTH = 100
-  let DATA_COLUMN_WIDTH = 50
+  let DATA_COLUMN_WIDTH = 80
 
   const horizontalScrollRef = useRef(null)
   const datesHorizontalScrollRef = useRef(null)
@@ -177,49 +101,100 @@ export const JournalScreen = () => {
 
   const isScrolling = useRef(false)
 
-  // Получаем уникальные даты и сортируем их
-  const dates = [...new Set(data.dates.map((item) => item.date))].sort()
+  // Используем объединенные даты после удаления дубликатов
+  const dates = unionDates
   const totalDataWidth = DATA_COLUMN_WIDTH * dates.length
   if (dates.length < 6) {
     DATA_COLUMN_WIDTH = 282 / dates.length
   }
-  // Функция для получения данных урока по предмету и дате
-  const getLessonData = (directionId, date) => {
-    // Находим ID даты для этой даты
-    const dateObj = data.dates.find((d) => d.date === date && d.ids.includes(directionId))
-    if (!dateObj) return null
+
+  // Функция для получения данных урока по предмету и объединенной дате
+  const getLessonData = (directionId, unionDate) => {
+    // Проверяем, есть ли данный предмет в этой объединенной дате
+    if (!unionDate.ids.includes(directionId)) return null
 
     // Находим направление
     const direction = data.directions.find((dir) => dir.id === directionId)
     if (!direction || !direction.dates) return null
 
-    return direction.dates[dateObj.id] || null
-  }
+    // Получаем ID оригинального урока из directionsToDates
+    const originalLessonId = unionDate.directionsToDates[directionId]
 
-  // Функция для отображения оценок
-  const renderGrades = (grades) => {
-    if (!grades || grades.length === 0) return '-'
+    // Получаем данные для конкретного урока
+    return {
+      lessonId: originalLessonId,
+      lessonData: direction.dates[originalLessonId] || null,
+      topic: unionDate.directionsToTooltip[directionId]?.topic || '-',
+      homeworkComment: unionDate.directionsToTooltip[directionId]?.commentDZ || null,
+    }
+  }
+  const statuses = [
+    { status: 'П+', value: '10' },
+    { status: 'П', value: '5' },
+    { status: 'П-', value: '3' },
+    { status: 'Н', value: '0' },
+  ]
+  // Функция для отображения оценок для одного урока
+  const renderGrades = (lesson) => {
+    if (!lesson || !lesson.lessonData?.grades || lesson.lessonData.grades.length === 0) return ''
+
+    const grades = lesson.lessonData.grades.map((grade: number) =>
+      typeof grade === 'object' ? grade.grade : grade
+    )
+
     return grades.join(', ')
   }
 
-  // Функция для отображения статуса
-  const renderStatus = (status) => {
+  // Функция для отображения статуса для одного урока
+  const renderStatus = (lesson) => {
+    if (!lesson || !lesson.lessonData) return ''
+
+    const status = lesson.lessonData.status
+
     switch (status) {
-      case 'present':
-        return '✓'
-      case 'absent':
-        return '✗'
-      case 'late':
-        return '⌚'
+      case '10':
+        return 'П+'
+      case '5':
+        return 'П'
+      case '3':
+        return 'П-'
+      case '0':
+        return 'Н'
       default:
-        return '-'
+        return ''
     }
   }
 
-  // Функция для получения темы урока
-  const getLessonTopic = (directionId, date) => {
-    const dateObj = data.dates.find((d) => d.date === date && d.ids.includes(directionId))
-    return dateObj?.lesson_topic || '-'
+  // Функция для получения цвета статуса
+  const getStatusColor = (lesson) => {
+    console.log(lesson)
+
+    if (!lesson || !lesson.lessonData) return '#f4f4f4'
+
+    const status = lesson.lessonData.status
+
+    switch (status) {
+      case '10':
+        return '#a0daa2'
+      case '5':
+        return '#9dc49b'
+      case '3':
+        return '#FFDDDF'
+      case '0':
+        return '#FCA0A7'
+      default:
+        return 'white'
+    }
+  }
+
+  // Проверяем есть ли комментарий в уроке
+  const hasComment = (lesson) => {
+    return lesson && lesson.lessonData?.comment
+  }
+
+  // Проверяем есть ли урок для данной клетки
+  const hasLesson = (lesson) => {
+    return lesson !== null
   }
 
   // Синхронизация горизонтальной прокрутки
@@ -265,14 +240,12 @@ export const JournalScreen = () => {
     }, 10)
   }
 
-  const openModal = (direction, date, lessonData, topic) => {
+  const openModal = (direction, unionDate, lesson) => {
     setSelectedCell({
       direction: direction.name,
-      date: date,
-      topic: topic,
-      grades: lessonData?.grades || [],
-      status: lessonData?.status || 'нет данных',
-      comment: lessonData?.comment || 'нет комментария',
+      date: unionDate.date,
+      lesson: lesson,
+      topic: lesson.topic,
     })
     setIsModalVisible(true)
   }
@@ -288,19 +261,17 @@ export const JournalScreen = () => {
       .toString()
       .padStart(2, '0')}`
   }
+
+  // Функция для отображения количества предметов в дате
+
   if (isInitialLoad) {
     return <Text>Loading</Text>
   }
+
   return (
     <ScrollView style={styles.container}>
-      {/* <View style={styles.dropdownContainer}>
-        <DropdownForJournal />
-        <DropdownForJournal />
-      </View> */}
-
       <View style={styles.tableContainer}>
         <View style={styles.fixedColumn}>
-          {/* Заголовок фиксированного столбца */}
           <View style={[styles.fixedHeader, { width: FIXED_COLUMN_WIDTH }]}>
             <Text style={styles.headerText}>Предметы</Text>
           </View>
@@ -333,9 +304,9 @@ export const JournalScreen = () => {
               scrollEventThrottle={16}
             >
               <View style={[styles.datesHeader, { width: totalDataWidth }]}>
-                {dates.map((date, index) => (
+                {dates.map((unionDate, index) => (
                   <View key={index} style={[styles.dateHeader, { width: DATA_COLUMN_WIDTH }]}>
-                    <Text style={styles.headerText}>{formatDate(date)}</Text>
+                    <Text style={styles.headerText}>{formatDate(unionDate.date)}</Text>
                   </View>
                 ))}
               </View>
@@ -355,29 +326,39 @@ export const JournalScreen = () => {
                 <View style={styles.dataContainer}>
                   {data.directions.map((direction, rowIndex) => (
                     <View key={direction.id} style={styles.dataRow}>
-                      {dates.map((date, cellIndex) => {
-                        const lessonData = getLessonData(direction.id, date)
-                        const topic = getLessonTopic(direction.id, date)
+                      {dates.map((unionDate, cellIndex) => {
+                        const lesson = getLessonData(direction.id, unionDate)
+                        const hasLessonData = hasLesson(lesson)
+                        const statusColor = getStatusColor(lesson)
 
                         return (
                           <View
                             key={cellIndex}
-                            style={[styles.dataCell, { width: DATA_COLUMN_WIDTH }]}
+                            style={[
+                              styles.dataCell,
+                              { width: DATA_COLUMN_WIDTH },
+                              !hasLessonData && styles.emptyCell,
+                              ,
+                              { backgroundColor: statusColor },
+                            ]}
                           >
-                            <TouchableOpacity
-                              style={styles.cellContent}
-                              onPress={() => openModal(direction, date, lessonData, topic)}
-                            >
-                              <Text style={styles.gradesText}>
-                                {renderGrades(lessonData?.grades)}
-                              </Text>
-                              <Text style={styles.statusText}>
-                                {renderStatus(lessonData?.status)}
-                              </Text>
-                              {lessonData?.comment && (
-                                <Text style={styles.commentIndicator}>💬</Text>
-                              )}
-                            </TouchableOpacity>
+                            {hasLessonData ? (
+                              <TouchableOpacity
+                                style={styles.cellContent}
+                                onPress={() => openModal(direction, unionDate, lesson)}
+                                disabled={!lesson?.lessonData.status}
+                              >
+                                <Text style={styles.gradesText}>{renderStatus(lesson)}</Text>
+
+                                {hasComment(lesson) && (
+                                  <Text style={styles.commentIndicator}>💬</Text>
+                                )}
+                              </TouchableOpacity>
+                            ) : (
+                              <View style={styles.cellContent}>
+                                <Text style={styles.emptyCellText}></Text>
+                              </View>
+                            )}
                           </View>
                         )
                       })}
@@ -398,43 +379,76 @@ export const JournalScreen = () => {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Информация об уроке</Text>
-
             {selectedCell && (
               <>
-                <View style={styles.modalRow}>
-                  <Text style={styles.modalLabel}>Предмет:</Text>
-                  <Text style={styles.modalValue}>{selectedCell.direction}</Text>
+                {/* Блок со статусами в левом верхнем углу */}
+                <View style={styles.statusBlock}>
+                  <View style={styles.statusHeader}>
+                    <Text style={styles.statusTitle}>Статус</Text>
+                  </View>
+                  <View style={styles.statusGrid}>
+                    {statuses.map((s, i) => (
+                      <View
+                        key={i}
+                        style={[
+                          styles.statusItem,
+                          {
+                            backgroundColor:
+                              s.value === selectedCell.lesson.lessonData?.status
+                                ? getStatusColor(selectedCell.lesson)
+                                : '',
+                          },
+                        ]}
+                      >
+                        <Text style={styles.statusText}>{s.status}</Text>
+                      </View>
+                    ))}
+                  </View>
                 </View>
-                <View style={styles.modalRow}>
-                  <Text style={styles.modalLabel}>Дата:</Text>
-                  <Text style={styles.modalValue}>{selectedCell.date}</Text>
-                </View>
-                <View style={styles.modalRow}>
-                  <Text style={styles.modalLabel}>Тема урока:</Text>
-                  <Text style={styles.modalValue}>{selectedCell.topic}</Text>
-                </View>
-                <View style={styles.modalRow}>
-                  <Text style={styles.modalLabel}>Оценки:</Text>
-                  <Text style={styles.modalValue}>
-                    {selectedCell.grades.length > 0 ? selectedCell.grades.join(', ') : 'нет оценок'}
-                  </Text>
-                </View>
-                <View style={styles.modalRow}>
-                  <Text style={styles.modalLabel}>Статус:</Text>
-                  <Text style={styles.modalValue}>
-                    {selectedCell.status === 'present'
-                      ? 'Присутствовал'
-                      : selectedCell.status === 'absent'
-                      ? 'Отсутствовал'
-                      : selectedCell.status === 'late'
-                      ? 'Опоздал'
-                      : 'нет данных'}
-                  </Text>
-                </View>
-                <View style={styles.modalRow}>
-                  <Text style={styles.modalLabel}>Комментарий:</Text>
-                  <Text style={styles.modalValue}>{selectedCell.comment}</Text>
+
+                {/* Остальная информация об уроке */}
+                <View style={styles.lessonInfo}>
+                  <View style={styles.modalRow}>
+                    <Text style={styles.modalLabel}>Предмет:</Text>
+                    <Text style={styles.modalValue}>{selectedCell.direction}</Text>
+                  </View>
+                  <View style={styles.modalRow}>
+                    <Text style={styles.modalLabel}>Дата:</Text>
+                    <Text style={styles.modalValue}>{selectedCell.date}</Text>
+                  </View>
+                  <View style={styles.modalRow}>
+                    <Text style={styles.modalLabel}>Тема урока:</Text>
+                    <Text style={styles.modalValue}>{selectedCell.lesson_topic || 'нет темы'}</Text>
+                  </View>
+
+                  {/* Оценки и комментарии (раскомментируйте если нужно) */}
+                  {/* <View style={styles.modalRow}>
+              <Text style={styles.modalLabel}>Оценки:</Text>
+              <Text style={styles.modalValue}>
+                {selectedCell.lesson?.lessonData?.grades?.length > 0
+                  ? selectedCell.lesson.lessonData.grades.map((gr, i) => (
+                      <Text key={i}>
+                        {typeof gr === 'object' ? gr.grade : gr}
+                        {i < selectedCell.lesson.lessonData.grades.length - 1 ? ', ' : ''}
+                      </Text>
+                    ))
+                  : 'нет оценок'}
+              </Text>
+            </View> */}
+
+                  <View style={styles.modalRow}>
+                    <Text style={styles.modalLabel}>Комментарий к уроку:</Text>
+                    <Text style={styles.modalValue}>
+                      {selectedCell.lesson?.lessonData?.comment || 'нет комментария'}
+                    </Text>
+                  </View>
+
+                  {selectedCell.lesson?.homeworkComment && (
+                    <View style={styles.modalRow}>
+                      <Text style={styles.modalLabel}>Домашнее задание:</Text>
+                      <Text style={styles.modalValue}>{selectedCell.lesson.homeworkComment}</Text>
+                    </View>
+                  )}
                 </View>
               </>
             )}
@@ -451,6 +465,7 @@ export const JournalScreen = () => {
   )
 }
 
+// Стили остаются такими же...
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -476,6 +491,12 @@ const styles = StyleSheet.create({
     borderRightColor: '#ccc',
     zIndex: 3,
   },
+  statusCell: {
+    backgroundColor: 'yellow',
+    width: '25%',
+    height: '160%',
+    alignItems: 'center',
+  },
   fixedHeader: {
     height: 50,
     backgroundColor: '#e0e0e0',
@@ -486,6 +507,18 @@ const styles = StyleSheet.create({
   },
   fixedRows: {
     flex: 1,
+  },
+  modalColumn: {
+    borderRadius: 12,
+    // overflow: 'hidden', // важно для закругления углов
+
+    width: '40%',
+  },
+
+  statusContent: {
+    backgroundColor: 'white', // светло-серый фон для контента
+    paddingVertical: 12,
+    flexDirection: 'row',
   },
   fixedCell: {
     height: 60,
@@ -520,6 +553,7 @@ const styles = StyleSheet.create({
     borderRightWidth: 1,
     borderRightColor: '#ddd',
   },
+
   mainScroll: {
     flex: 1,
   },
@@ -531,6 +565,57 @@ const styles = StyleSheet.create({
   },
   dataContainer: {
     flexDirection: 'column',
+  },
+  statusBlock: {
+    position: 'absolute',
+    top: 20,
+    left: 20,
+    width: 150,
+
+    borderRadius: 12,
+    borderWidth: 1,
+    overflow: 'hidden',
+    backgroundColor: '#fff',
+  },
+  statusHeader: {
+    backgroundColor: '#e0e0e0',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderBottomWidth: 1,
+  },
+  statusTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  statusGrid: {
+    flexDirection: 'row',
+  },
+  statusItem: {
+    flexDirection: 'row',
+    backgroundColor: 'white',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    width: '25%',
+
+    borderBottomWidth: 1,
+    borderWidth: 1, // черная рамка
+    borderColor: '#e0e0e0',
+  },
+
+  statusText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    width: 30,
+  },
+  statusDescription: {
+    fontSize: 12,
+    color: '#666',
+    flex: 1,
+  },
+  lessonInfo: {
+    marginTop: 80, // отступ для блока статусов
+    marginLeft: 180, // отступ для блока статусов
   },
   dataRow: {
     flexDirection: 'row',
@@ -545,11 +630,15 @@ const styles = StyleSheet.create({
     borderRightWidth: 1,
     borderRightColor: '#eee',
   },
+  emptyCell: {
+    backgroundColor: '#f5f5f5',
+  },
   cellContent: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 5,
+    width: '100%',
   },
   gradesText: {
     fontSize: 14,
@@ -560,6 +649,10 @@ const styles = StyleSheet.create({
   statusText: {
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  emptyCellText: {
+    fontSize: 14,
+    color: '#999',
   },
   commentIndicator: {
     position: 'absolute',
@@ -577,7 +670,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 14,
   },
-  // Стили для модального окна
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -587,7 +679,9 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     width: '100%',
+    maxHeight: '80%',
     backgroundColor: 'white',
+
     borderRadius: 12,
     padding: 20,
     shadowColor: '#000',
@@ -611,8 +705,10 @@ const styles = StyleSheet.create({
   modalLabel: {
     fontWeight: '600',
     color: '#555',
+    textAlign: 'center',
     width: 100,
     fontSize: 14,
+    alignItems: 'center',
   },
   modalValue: {
     flex: 1,
@@ -622,6 +718,7 @@ const styles = StyleSheet.create({
   },
   modalButtons: {
     marginTop: 20,
+    backgroundColor: 'green',
   },
   closeButton: {
     backgroundColor: '#007AFF',
