@@ -81,12 +81,15 @@ export const JournalScreen = () => {
     loadInitialData()
     console.log(dataUS)
   }, [dispatch])
+  console.log(dataUS)
 
-  const data = dataUS !== null && dataUS !== undefined ? dataUS : testData
+  const data = dataUS !== null && dataUS !== undefined ? dataUS : { directions: [], dates: [] }
 
   // Применяем обе функции: сначала удаляем дубликаты, потом объединяем даты
-
-  const unionDates = getUnionDate(removeDuplicates(data.dates)).slice().sort(getSortByField('date'))
+  const unionDates =
+    data.dates && data.dates.length > 0
+      ? getUnionDate(removeDuplicates(data.dates)).slice().sort(getSortByField('date'))
+      : []
 
   const [isModalVisible, setIsModalVisible] = useState(false)
   const [selectedCell, setSelectedCell] = useState(null)
