@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { Provider } from 'react-redux'
 import store from './app/redux/store/store.ts'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
@@ -12,8 +12,20 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { ActionSheetProvider } from '@expo/react-native-action-sheet'
 import Toast from 'react-native-toast-message'
 import { toastConfig } from './app/settings/ToastHelper.tsx'
+import VersionCheckService from './services/versionCheck'
 
 const App = () => {
+  useEffect(() => {
+    const checkUpdate = async () => {
+      setTimeout(async () => {
+        await VersionCheckService.checkForUpdate()
+      }, 5000)
+    }
+    console.log('hello')
+
+    checkUpdate()
+  }, [])
+
   return (
     <Provider store={store}>
       <ActionSheetProvider>
@@ -37,6 +49,7 @@ const App = () => {
                   <MainComponent />
                 </NavigationContainer>
                 {/*</WebSocketProvider>*/}
+                <Toast config={toastConfig} />
               </SafeAreaProvider>
             </AuthProvider>
           </PaperProvider>
