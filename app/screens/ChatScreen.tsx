@@ -37,6 +37,7 @@ import { IconButton, Menu, Portal } from 'react-native-paper'
 import { UniversalModal } from '../components/UniversalModal/UniversalModal.tsx'
 import { getUrl } from '../settings/utils.ts'
 import { CreateChatScreen } from './CreateChatScreen.tsx'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 
 interface ChatItem {
   id: string
@@ -106,7 +107,20 @@ export const ChatScreen = ({ navigation }: any) => {
   const filteredUsers = chatUsers.filter((user) =>
     user.name.toLowerCase().includes(searchQuery.toLowerCase())
   )
+  const getStoredUserRole = async () => {
+    try {
+      const storedRole = await AsyncStorage.getItem('USER_ROLE')
+      console.log(`Роль из стораджа: ${storedRole}`)
+      return storedRole
+    } catch (error) {
+      console.error('Ошибка при получении роли из AsyncStorage:', error)
+      return null
+    }
+  }
 
+  // Использование
+  const userRole = getStoredUserRole()
+  console.log('Текущая роль:', userRole)
   useEffect(() => {
     dispatch(fetchChatUserNameList({}))
     dispatch(fetchChatsList())
@@ -319,14 +333,16 @@ export const ChatScreen = ({ navigation }: any) => {
                     onBlur={() => setIsSearchFocused(false)}
                     onLayout={() => setIsSearchFocused(false)}
                   />
-                  <IconButton
-                    icon="plus-circle-outline"
-                    size={25}
-                    style={{ margin: 0 }}
-                    iconColor={Colors.colorGreen}
-                    onPress={() => setIsCreateChat(true)}
-                    // onPress={() => navigation.navigate(ROUTES.CREATE_CHAT)}
-                  />
+                  {userRole._j === 'children' && (
+                    <IconButton
+                      icon="plus-circle-outline"
+                      size={25}
+                      style={{ margin: 0 }}
+                      iconColor={Colors.colorGreen}
+                      onPress={() => setIsCreateChat(true)}
+                      // onPress={() => navigation.navigate(ROUTES.CREATE_CHAT)}
+                    />
+                  )}
                 </>
               )}
             </View>

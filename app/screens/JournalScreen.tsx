@@ -411,7 +411,7 @@ export const JournalScreen = () => {
 
                 {/* Остальная информация об уроке */}
                 <View style={styles.lessonInfo}>
-                  <View style={styles.modalRow}>
+                  {/* <View style={styles.modalRow}>
                     <Text style={styles.modalLabel}>Предмет:</Text>
                     <Text style={styles.modalValue}>{selectedCell.direction}</Text>
                   </View>
@@ -422,7 +422,7 @@ export const JournalScreen = () => {
                   <View style={styles.modalRow}>
                     <Text style={styles.modalLabel}>Тема урока:</Text>
                     <Text style={styles.modalValue}>{selectedCell.lesson_topic || 'нет темы'}</Text>
-                  </View>
+                  </View> */}
 
                   {/* Оценки и комментарии (раскомментируйте если нужно) */}
                   {/* <View style={styles.modalRow}>
@@ -439,7 +439,7 @@ export const JournalScreen = () => {
               </Text>
             </View> */}
 
-                  <View style={styles.modalRow}>
+                  {/* <View style={styles.modalRow}>
                     <Text style={styles.modalLabel}>Комментарий к уроку:</Text>
                     <Text style={styles.modalValue}>
                       {selectedCell.lesson?.lessonData?.comment || 'нет комментария'}
@@ -451,7 +451,7 @@ export const JournalScreen = () => {
                       <Text style={styles.modalLabel}>Домашнее задание:</Text>
                       <Text style={styles.modalValue}>{selectedCell.lesson.homeworkComment}</Text>
                     </View>
-                  )}
+                  )} */}
                 </View>
               </>
             )}
