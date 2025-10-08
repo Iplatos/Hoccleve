@@ -12,6 +12,7 @@ import DropdownForJournal from '../components/DropdownComponent/DropdownForJourn
 import { useDispatch, useSelector } from 'react-redux'
 import { useAppDispatch, useAppSelector } from '../redux/hooks'
 import { fetchJournalData, setParams } from '../redux/slises/generalStudentJournalSlice'
+import { fetchPeriods, setSelectedPeriod } from '../redux/slises/periodSlice'
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window')
 
@@ -68,19 +69,63 @@ const getUnionDate = (dates) => {
 export const JournalScreen = () => {
   const dispatch = useAppDispatch()
   const { data: dataUS, loading, error } = useAppSelector((state) => state.generalStudentJournal)
-  const [startDate, setStartDate] = useState('2025-10-01')
+  const {
+    periods,
+    selectedPeriod,
+    loading: periodsLoading,
+  } = useAppSelector((state) => state.periods)
   const [isInitialLoad, setIsInitialLoad] = useState(true)
-  const [endDate, setEndDate] = useState('2025-10-02')
 
   useEffect(() => {
     const loadInitialData = async () => {
-      await dispatch(fetchJournalData({ start_date: startDate, end_date: endDate }))
-      setIsInitialLoad(false)
+      try {
+        // Загружаем периоды
+        const periodsData = await dispatch(fetchPeriods()).unwrap()
+        console.log('Loaded periods:', periodsData)
+
+        let targetPeriod: Period | null = null
+
+        // Проверяем есть ли периоды
+        if (periodsData && periodsData.length > 0) {
+          // Берем первый период из массива
+          targetPeriod = periodsData[0]
+          console.log('Using first period:', targetPeriod)
+        } else {
+          // Если периодов нет, создаем дефолтный период (последняя неделя)
+          const endDate = new Date().toISOString().split('T')[0]
+          const startDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+            .toISOString()
+            .split('T')[0]
+
+          targetPeriod = {
+            id: -1, // специальный ID для дефолтного периода
+            name: 'Последняя неделя',
+            start_date: startDate,
+            end_date: endDate,
+          }
+          console.log('Using default week period:', targetPeriod)
+        }
+
+        // Устанавливаем выбранный период
+        setSelectedPeriod(targetPeriod)
+
+        // Загружаем журнал для выбранного периода
+        await dispatch(
+          fetchJournalData({
+            start_date: targetPeriod.start_date,
+            end_date: targetPeriod.end_date,
+          })
+        ).unwrap()
+      } catch (error) {
+        console.error('Error loading data:', error)
+      } finally {
+        setIsInitialLoad(false)
+      }
     }
 
     loadInitialData()
-    console.log(dataUS)
-  }, [dispatch])
+  }, [dispatch, selectedPeriod])
+
   console.log(dataUS)
 
   const data = dataUS !== null && dataUS !== undefined ? dataUS : { directions: [], dates: [] }
@@ -267,18 +312,20 @@ export const JournalScreen = () => {
 
   // Функция для отображения количества предметов в дате
 
-  if (isInitialLoad) {
+  if (isInitialLoad || periodsLoading) {
     return <Text>Loading</Text>
   }
 
   return (
     <ScrollView style={styles.container}>
+      <View>
+        <DropdownForJournal />
+      </View>
       <View style={styles.tableContainer}>
         <View style={styles.fixedColumn}>
           <View style={[styles.fixedHeader, { width: FIXED_COLUMN_WIDTH }]}>
             <Text style={styles.headerText}>Предметы</Text>
           </View>
-
           <ScrollView
             ref={fixedColumnScrollRef}
             style={styles.fixedRows}
@@ -295,7 +342,6 @@ export const JournalScreen = () => {
             ))}
           </ScrollView>
         </View>
-
         <View style={styles.mainContent}>
           <View style={styles.fixedDatesHeader}>
             <ScrollView
@@ -315,7 +361,6 @@ export const JournalScreen = () => {
               </View>
             </ScrollView>
           </View>
-
           <View style={styles.mainScroll}>
             <ScrollView
               ref={horizontalScrollRef}
@@ -333,7 +378,6 @@ export const JournalScreen = () => {
                         const lesson = getLessonData(direction.id, unionDate)
                         const hasLessonData = hasLesson(lesson)
                         const statusColor = getStatusColor(lesson)
-
                         return (
                           <View
                             key={cellIndex}
@@ -353,7 +397,6 @@ export const JournalScreen = () => {
                               >
                                 <Text style={styles.gradesText}>{renderStatus(lesson)}</Text>
                                 <Text style={styles.gradesText}>{renderGrades(lesson)}</Text>
-
                                 {hasComment(lesson) && (
                                   <Text style={styles.commentIndicator}>💬</Text>
                                 )}
@@ -374,7 +417,6 @@ export const JournalScreen = () => {
           </View>
         </View>
       </View>
-
       <Modal
         visible={isModalVisible}
         animationType="fade"
@@ -422,7 +464,6 @@ export const JournalScreen = () => {
                     </View>
                   </View>
                 </View>
-
                 {/* Новый блок с оценками и комментариями к ним */}
                 <View style={styles.gradesRow}>
                   <View style={styles.gradesBlock}>
@@ -443,7 +484,6 @@ export const JournalScreen = () => {
                       )}
                     </View>
                   </View>
-
                   <View style={styles.gradesCommentBlock}>
                     <View style={styles.gradesCommentHeader}>
                       <Text style={styles.gradesCommentTitle}>Комментарий</Text>
@@ -465,14 +505,12 @@ export const JournalScreen = () => {
                     </View>
                   </View>
                 </View>
-
                 {/* Кнопка закрытия под блоком с оценками */}
                 <View style={styles.modalButtons}>
                   <TouchableOpacity style={styles.closeButton} onPress={closeModal}>
                     <Text style={styles.closeButtonText}>Закрыть</Text>
                   </TouchableOpacity>
                 </View>
-
                 {/* Остальная информация об уроке */}
                 <View style={styles.lessonInfo}>{/* ... остальные строки модалки ... */}</View>
               </>
