@@ -145,7 +145,7 @@ export const JournalScreen = () => {
       typeof grade === 'object' ? grade.grade : grade
     )
 
-    return grades.join(', ')
+    return '/' + grades.join(', ')
   }
 
   // Функция для отображения статуса для одного урока
@@ -352,6 +352,7 @@ export const JournalScreen = () => {
                                 disabled={!lesson?.lessonData.status}
                               >
                                 <Text style={styles.gradesText}>{renderStatus(lesson)}</Text>
+                                <Text style={styles.gradesText}>{renderGrades(lesson)}</Text>
 
                                 {hasComment(lesson) && (
                                   <Text style={styles.commentIndicator}>💬</Text>
@@ -385,82 +386,97 @@ export const JournalScreen = () => {
             {selectedCell && (
               <>
                 {/* Блок со статусами в левом верхнем углу */}
-                <View style={styles.statusBlock}>
-                  <View style={styles.statusHeader}>
-                    <Text style={styles.statusTitle}>Статус</Text>
+                <View style={styles.statusRow}>
+                  <View style={styles.statusBlock}>
+                    <View style={styles.statusHeader}>
+                      <Text style={styles.statusTitle}>Статус</Text>
+                    </View>
+                    <View style={styles.statusGrid}>
+                      {statuses.map((s, i) => (
+                        <View
+                          key={i}
+                          style={[
+                            styles.statusItem,
+                            {
+                              backgroundColor:
+                                s.value === selectedCell.lesson.lessonData?.status
+                                  ? getStatusColor(selectedCell.lesson)
+                                  : '',
+                            },
+                          ]}
+                        >
+                          <Text style={styles.statusText}>{s.status}</Text>
+                        </View>
+                      ))}
+                    </View>
                   </View>
-                  <View style={styles.statusGrid}>
-                    {statuses.map((s, i) => (
-                      <View
-                        key={i}
-                        style={[
-                          styles.statusItem,
-                          {
-                            backgroundColor:
-                              s.value === selectedCell.lesson.lessonData?.status
-                                ? getStatusColor(selectedCell.lesson)
-                                : '',
-                          },
-                        ]}
-                      >
-                        <Text style={styles.statusText}>{s.status}</Text>
-                      </View>
-                    ))}
+                  {/* Новый блок с комментарием */}
+                  <View style={styles.commentBlock}>
+                    <View style={styles.commentHeader}>
+                      <Text style={styles.commentTitle}>Комментарий</Text>
+                    </View>
+                    <View style={styles.commentContent}>
+                      <Text style={styles.commentText}>
+                        {selectedCell.lesson.lessonData?.comment || 'нет комментария'}
+                      </Text>
+                    </View>
                   </View>
+                </View>
+
+                {/* Новый блок с оценками и комментариями к ним */}
+                <View style={styles.gradesRow}>
+                  <View style={styles.gradesBlock}>
+                    <View style={styles.gradesHeader}>
+                      <Text style={styles.gradesTitle}>Оценка</Text>
+                    </View>
+                    <View style={styles.gradesContent}>
+                      {selectedCell.lesson.lessonData?.grades?.length > 0 ? (
+                        selectedCell.lesson.lessonData?.grades.map((grade, index) => (
+                          <View key={index} style={styles.gradeItem}>
+                            <Text style={styles.gradeText}>
+                              {typeof grade === 'object' ? grade.grade : grade}
+                            </Text>
+                          </View>
+                        ))
+                      ) : (
+                        <Text style={styles.noGradesText}>нет оценок</Text>
+                      )}
+                    </View>
+                  </View>
+
+                  <View style={styles.gradesCommentBlock}>
+                    <View style={styles.gradesCommentHeader}>
+                      <Text style={styles.gradesCommentTitle}>Комментарий</Text>
+                    </View>
+                    <View style={styles.gradesCommentContent}>
+                      {selectedCell.lesson.lessonData?.grades?.length > 0 ? (
+                        selectedCell.lesson.lessonData?.grades.map((grade, index) => (
+                          <View key={index} style={styles.gradeCommentItem}>
+                            <Text style={styles.gradeCommentText}>
+                              {typeof grade === 'object'
+                                ? grade.comment || 'нет комментария'
+                                : 'нет комментария'}
+                            </Text>
+                          </View>
+                        ))
+                      ) : (
+                        <Text style={styles.noGradesText}>нет комментариев</Text>
+                      )}
+                    </View>
+                  </View>
+                </View>
+
+                {/* Кнопка закрытия под блоком с оценками */}
+                <View style={styles.modalButtons}>
+                  <TouchableOpacity style={styles.closeButton} onPress={closeModal}>
+                    <Text style={styles.closeButtonText}>Закрыть</Text>
+                  </TouchableOpacity>
                 </View>
 
                 {/* Остальная информация об уроке */}
-                <View style={styles.lessonInfo}>
-                  {/* <View style={styles.modalRow}>
-                    <Text style={styles.modalLabel}>Предмет:</Text>
-                    <Text style={styles.modalValue}>{selectedCell.direction}</Text>
-                  </View>
-                  <View style={styles.modalRow}>
-                    <Text style={styles.modalLabel}>Дата:</Text>
-                    <Text style={styles.modalValue}>{selectedCell.date}</Text>
-                  </View>
-                  <View style={styles.modalRow}>
-                    <Text style={styles.modalLabel}>Тема урока:</Text>
-                    <Text style={styles.modalValue}>{selectedCell.lesson_topic || 'нет темы'}</Text>
-                  </View> */}
-
-                  {/* Оценки и комментарии (раскомментируйте если нужно) */}
-                  {/* <View style={styles.modalRow}>
-              <Text style={styles.modalLabel}>Оценки:</Text>
-              <Text style={styles.modalValue}>
-                {selectedCell.lesson?.lessonData?.grades?.length > 0
-                  ? selectedCell.lesson.lessonData.grades.map((gr, i) => (
-                      <Text key={i}>
-                        {typeof gr === 'object' ? gr.grade : gr}
-                        {i < selectedCell.lesson.lessonData.grades.length - 1 ? ', ' : ''}
-                      </Text>
-                    ))
-                  : 'нет оценок'}
-              </Text>
-            </View> */}
-
-                  {/* <View style={styles.modalRow}>
-                    <Text style={styles.modalLabel}>Комментарий к уроку:</Text>
-                    <Text style={styles.modalValue}>
-                      {selectedCell.lesson?.lessonData?.comment || 'нет комментария'}
-                    </Text>
-                  </View>
-
-                  {selectedCell.lesson?.homeworkComment && (
-                    <View style={styles.modalRow}>
-                      <Text style={styles.modalLabel}>Домашнее задание:</Text>
-                      <Text style={styles.modalValue}>{selectedCell.lesson.homeworkComment}</Text>
-                    </View>
-                  )} */}
-                </View>
+                <View style={styles.lessonInfo}>{/* ... остальные строки модалки ... */}</View>
               </>
             )}
-
-            <View style={styles.modalButtons}>
-              <TouchableOpacity style={styles.closeButton} onPress={closeModal}>
-                <Text style={styles.closeButtonText}>Закрыть</Text>
-              </TouchableOpacity>
-            </View>
           </View>
         </View>
       </Modal>
@@ -494,12 +510,6 @@ const styles = StyleSheet.create({
     borderRightColor: '#ccc',
     zIndex: 3,
   },
-  statusCell: {
-    backgroundColor: 'yellow',
-    width: '25%',
-    height: '160%',
-    alignItems: 'center',
-  },
   fixedHeader: {
     height: 50,
     backgroundColor: '#e0e0e0',
@@ -510,18 +520,6 @@ const styles = StyleSheet.create({
   },
   fixedRows: {
     flex: 1,
-  },
-  modalColumn: {
-    borderRadius: 12,
-    // overflow: 'hidden', // важно для закругления углов
-
-    width: '40%',
-  },
-
-  statusContent: {
-    backgroundColor: 'white', // светло-серый фон для контента
-    paddingVertical: 12,
-    flexDirection: 'row',
   },
   fixedCell: {
     height: 60,
@@ -556,7 +554,6 @@ const styles = StyleSheet.create({
     borderRightWidth: 1,
     borderRightColor: '#ddd',
   },
-
   mainScroll: {
     flex: 1,
   },
@@ -568,57 +565,6 @@ const styles = StyleSheet.create({
   },
   dataContainer: {
     flexDirection: 'column',
-  },
-  statusBlock: {
-    position: 'absolute',
-    top: 20,
-    left: 20,
-    width: 150,
-
-    borderRadius: 12,
-    borderWidth: 1,
-    overflow: 'hidden',
-    backgroundColor: '#fff',
-  },
-  statusHeader: {
-    backgroundColor: '#e0e0e0',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderBottomWidth: 1,
-  },
-  statusTitle: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    textAlign: 'center',
-  },
-  statusGrid: {
-    flexDirection: 'row',
-  },
-  statusItem: {
-    flexDirection: 'row',
-    backgroundColor: 'white',
-    justifyContent: 'center',
-    paddingVertical: 8,
-    width: '25%',
-
-    borderBottomWidth: 1,
-    borderWidth: 1, // черная рамка
-    borderColor: '#e0e0e0',
-  },
-
-  statusText: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    width: 30,
-  },
-  statusDescription: {
-    fontSize: 12,
-    color: '#666',
-    flex: 1,
-  },
-  lessonInfo: {
-    marginTop: 80, // отступ для блока статусов
-    marginLeft: 180, // отступ для блока статусов
   },
   dataRow: {
     flexDirection: 'row',
@@ -638,6 +584,7 @@ const styles = StyleSheet.create({
   },
   cellContent: {
     flex: 1,
+    flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 5,
@@ -648,10 +595,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#333',
     marginBottom: 2,
-  },
-  statusText: {
-    fontSize: 16,
-    fontWeight: 'bold',
   },
   emptyCellText: {
     fontSize: 14,
@@ -682,9 +625,8 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     width: '100%',
-    maxHeight: '80%',
+    height: '40%',
     backgroundColor: 'white',
-
     borderRadius: 12,
     padding: 20,
     shadowColor: '#000',
@@ -692,13 +634,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 4,
     elevation: 5,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 20,
-    textAlign: 'center',
-    color: '#333',
   },
   modalRow: {
     flexDirection: 'row',
@@ -721,7 +656,6 @@ const styles = StyleSheet.create({
   },
   modalButtons: {
     marginTop: 20,
-    backgroundColor: 'green',
   },
   closeButton: {
     backgroundColor: '#007AFF',
@@ -734,6 +668,154 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     fontSize: 16,
   },
-})
+  // Стили для блоков в модалке
+  statusRow: {
+    flexDirection: 'row',
+    width: '100%',
+    justifyContent: 'space-between',
+  },
+  statusBlock: {
+    width: 150,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    overflow: 'hidden',
+    backgroundColor: '#fff',
+  },
+  commentBlock: {
+    width: 150,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    overflow: 'hidden',
+    backgroundColor: '#fff',
+  },
+  gradesBlock: {
+    width: 150,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    overflow: 'hidden',
+    backgroundColor: '#fff',
+  },
+  gradesCommentBlock: {
+    width: 150,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    overflow: 'hidden',
+    backgroundColor: '#fff',
+  },
 
-export default JournalScreen
+  // Общие стили для шапок
+  statusHeader: {
+    backgroundColor: '#e0e0e0',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderBottomWidth: 1,
+    height: 40, // фиксированная высота для всех шапок
+    justifyContent: 'center',
+  },
+  commentHeader: {
+    backgroundColor: '#e0e0e0',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderBottomWidth: 1,
+    height: 40,
+    justifyContent: 'center',
+  },
+  gradesHeader: {
+    backgroundColor: '#e0e0e0',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderBottomWidth: 1,
+    height: 40,
+    justifyContent: 'center',
+  },
+  gradesCommentHeader: {
+    backgroundColor: '#e0e0e0',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderBottomWidth: 1,
+    height: 40,
+    justifyContent: 'center',
+  },
+
+  // Общие стили для контента
+  statusGrid: {
+    flexDirection: 'row',
+    height: 40, // такая же высота как у шапки
+  },
+  commentContent: {
+    padding: 12,
+    height: 40, // такая же высота как у шапки
+    justifyContent: 'center',
+  },
+  gradesContent: {
+    padding: 12,
+    minHeight: 40, // такая же высота как у шапки
+    justifyContent: 'center',
+  },
+  //////////
+  gradesCommentContent: {
+    padding: 12,
+    minHeight: 40, // такая же высота как у шапки
+    justifyContent: 'center',
+  },
+
+  // Для статусов убираем вертикальные отступы
+  statusItem: {
+    backgroundColor: 'white',
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '25%',
+    borderRightWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: '#e0e0e0',
+    height: 40, // фиксированная высота ячеек статуса
+  },
+  statusText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  commentText: {
+    fontSize: 12,
+    textAlign: 'center',
+    color: '#333',
+  },
+  gradesRow: {
+    flexDirection: 'row',
+    width: '100%',
+    marginTop: 10,
+    justifyContent: 'space-between',
+  },
+  gradeItem: {
+    borderBottomColor: '#f0f0f0',
+  },
+  gradeText: {
+    fontSize: 12,
+    textAlign: 'center',
+    borderBottomColor: '#f0f0f0',
+
+    color: '#333',
+  },
+  noGradesText: {
+    fontSize: 12,
+    textAlign: 'center',
+    color: '#999',
+    fontStyle: 'italic',
+  },
+  gradeCommentItem: {
+    // borderBottomWidth: 1,
+  },
+  gradeCommentText: {
+    fontSize: 12,
+    textAlign: 'left', // выравнивание по левому краю
+    color: '#333',
+  },
+  lessonInfo: {
+    marginTop: 80,
+    marginLeft: 350,
+  },
+})
