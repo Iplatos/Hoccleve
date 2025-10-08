@@ -9,10 +9,9 @@ import {
   TouchableOpacity,
 } from 'react-native'
 import DropdownForJournal from '../components/DropdownComponent/DropdownForJournal/DropdownForJournal'
-import { useDispatch, useSelector } from 'react-redux'
 import { useAppDispatch, useAppSelector } from '../redux/hooks'
 import { fetchJournalData, setParams } from '../redux/slises/generalStudentJournalSlice'
-import { fetchPeriods, setSelectedPeriod } from '../redux/slises/periodSlice'
+import { fetchPeriods, Period, setSelectedPeriod } from '../redux/slises/periodSlice'
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window')
 
@@ -124,9 +123,9 @@ export const JournalScreen = () => {
     }
 
     loadInitialData()
-  }, [dispatch, selectedPeriod])
+  }, [dispatch])
 
-  console.log(dataUS)
+  console.log(selectedPeriod)
 
   const data = dataUS !== null && dataUS !== undefined ? dataUS : { directions: [], dates: [] }
 
@@ -151,10 +150,10 @@ export const JournalScreen = () => {
 
   // Используем объединенные даты после удаления дубликатов
   const dates = unionDates
-  const totalDataWidth = DATA_COLUMN_WIDTH * dates.length
-  if (dates.length < 6) {
-    DATA_COLUMN_WIDTH = 282 / dates.length
-  }
+  const totalDataWidth = DATA_COLUMN_WIDTH * (dates.length + 1)
+  // if (dates.length < 5) {
+  //   DATA_COLUMN_WIDTH = 282 / (dates.length + 1)
+  //}
 
   // Функция для получения данных урока по предмету и объединенной дате
   const getLessonData = (directionId, unionDate) => {
@@ -215,8 +214,6 @@ export const JournalScreen = () => {
 
   // Функция для получения цвета статуса
   const getStatusColor = (lesson) => {
-    console.log(lesson)
-
     if (!lesson || !lesson.lessonData) return '#f4f4f4'
 
     const status = lesson.lessonData.status
@@ -352,7 +349,12 @@ export const JournalScreen = () => {
               onScroll={handleDatesHorizontalScroll}
               scrollEventThrottle={16}
             >
-              <View style={[styles.datesHeader, { width: totalDataWidth }]}>
+              <View style={[styles.datesHeader, { width: totalDataWidth + DATA_COLUMN_WIDTH }]}>
+                {/* Новый столбец среднего балла */}
+                <View style={[styles.dateHeader, { width: DATA_COLUMN_WIDTH }]}>
+                  <Text style={styles.headerText}>Ср. балл</Text>
+                </View>
+                {/* Существующие даты */}
                 {dates.map((unionDate, index) => (
                   <View key={index} style={[styles.dateHeader, { width: DATA_COLUMN_WIDTH }]}>
                     <Text style={styles.headerText}>{formatDate(unionDate.date)}</Text>
@@ -374,10 +376,19 @@ export const JournalScreen = () => {
                 <View style={styles.dataContainer}>
                   {data.directions.map((direction, rowIndex) => (
                     <View key={direction.id} style={styles.dataRow}>
+                      {/* Новый столбец со средним баллом */}
+                      <View style={[styles.dataCell, { width: DATA_COLUMN_WIDTH }]}>
+                        <View style={styles.cellContent}>
+                          <Text style={styles.gpaText}>{direction.gpa || '0'}</Text>
+                        </View>
+                      </View>
+
+                      {/* Существующие ячейки с датами */}
                       {dates.map((unionDate, cellIndex) => {
                         const lesson = getLessonData(direction.id, unionDate)
                         const hasLessonData = hasLesson(lesson)
                         const statusColor = getStatusColor(lesson)
+
                         return (
                           <View
                             key={cellIndex}
@@ -385,7 +396,6 @@ export const JournalScreen = () => {
                               styles.dataCell,
                               { width: DATA_COLUMN_WIDTH },
                               !hasLessonData && styles.emptyCell,
-                              ,
                               { backgroundColor: statusColor },
                             ]}
                           >
@@ -397,6 +407,7 @@ export const JournalScreen = () => {
                               >
                                 <Text style={styles.gradesText}>{renderStatus(lesson)}</Text>
                                 <Text style={styles.gradesText}>{renderGrades(lesson)}</Text>
+
                                 {hasComment(lesson) && (
                                   <Text style={styles.commentIndicator}>💬</Text>
                                 )}
@@ -584,6 +595,12 @@ const styles = StyleSheet.create({
   datesHeader: {
     flexDirection: 'row',
     height: 50,
+  },
+  gpaText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#6E368C',
+    textAlign: 'center',
   },
   dateHeader: {
     height: 50,
@@ -788,6 +805,7 @@ const styles = StyleSheet.create({
     padding: 12,
     height: 40, // такая же высота как у шапки
     justifyContent: 'center',
+    alignItems: 'flex-start',
   },
   gradesContent: {
     padding: 12,

@@ -7,7 +7,7 @@ import { useAppDispatch, useAppSelector } from '../../../redux/hooks'
 
 interface DropdownItem {
   label: string
-  value: string | number
+  value: string | number | null
 }
 
 interface DropdownForJournalProps {
@@ -53,8 +53,8 @@ const JournalHeader = () => {
   const [isDatePickerVisible, setIsDatePickerVisible] = useState(false)
   const [isPeriodModalVisible, setIsPeriodModalVisible] = useState(false)
   const [selectedDate, setSelectedDate] = useState(new Date())
-  const [startDate, setStartDate] = useState(null)
-  const [endDate, setEndDate] = useState(null)
+  const [startDate, setStartDate] = useState<string | null>(null)
+  const [endDate, setEndDate] = useState<string | null>(null)
   const [datePickerMode, setDatePickerMode] = useState('start') // 'start' or 'end'
 
   const firstDropdownData = [
@@ -69,17 +69,14 @@ const JournalHeader = () => {
     ...period,
   }))
 
-  const handleFirstDropdownChange = (item: {
-    label: string
-    value: 'default' | 'daily' | 'custom' | null
-    _index: number
-  }) => {
+  const handleFirstDropdownChange = (item) => {
     setFirstDropdownValue(item.value)
     setSecondDropdownValue(null)
   }
 
   const handleSecondDropdownChange = (item) => {
     setSecondDropdownValue(item.value)
+
     const selectedPeriod = periods.find((p) => p.id === item.value)
     if (selectedPeriod) {
       dispatch(
@@ -95,13 +92,15 @@ const JournalHeader = () => {
     setIsDatePickerVisible(true)
   }
 
-  const handleDateConfirm = (date) => {
-    console.log(date, 'handleDateConfirm')
-
+  const handleDateConfirm = (date: Date) => {
     setSelectedDate(date)
     setIsDatePickerVisible(false)
 
-    const dateStr = date.toISOString().split('T')[0]
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    const dateStr = `${year}-${month}-${day}`
+
     dispatch(
       fetchJournalData({
         start_date: dateStr,
@@ -124,8 +123,11 @@ const JournalHeader = () => {
     setIsDatePickerVisible(true)
   }
 
-  const handlePeriodDateConfirm = (date) => {
-    const dateStr = date.toISOString().split('T')[0]
+  const handlePeriodDateConfirm = (date: Date) => {
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    const dateStr = `${year}-${month}-${day}`
     if (datePickerMode === 'start') {
       setStartDate(dateStr)
     } else {
@@ -227,7 +229,6 @@ const JournalHeader = () => {
         confirmTextIOS="OK"
       />
 
-      {/* Модалка для выбора периода */}
       <Modal
         visible={isPeriodModalVisible}
         animationType="slide"
