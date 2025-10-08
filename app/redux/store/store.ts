@@ -41,6 +41,7 @@ import conferenceWithoutStatusSlice, {
 } from '../slises/conferenceWithoutStatusSlice.ts'
 import homeworkTimerSlice from '../slises/homeworkTimerSlice.ts'
 import generalStudentJournalSlice from '../slises/generalStudentJournalSlice.ts'
+import periodSlice from '../slises/periodSlice.ts'
 
 const store = configureStore({
   reducer: {
@@ -93,6 +94,7 @@ const store = configureStore({
     currentScreen: currentScreenSlice,
     generalStudentJournal: generalStudentJournalSlice,
     [baseApi.reducerPath]: baseApi.reducer,
+    periods: periodSlice,
   },
   middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(baseApi.middleware),
 })
