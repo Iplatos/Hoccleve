@@ -2,21 +2,45 @@ import React, { useEffect, useState } from 'react'
 import { ScrollView, View, Text, StyleSheet } from 'react-native'
 import { useAppDispatch, useAppSelector } from '../redux/hooks'
 import { fetchJournalData } from '../redux/slises/generalStudentJournalSlice'
+import { fetchTeacherJournalData } from '../redux/slises/teacherJournalSlice' // ✅ ДОБАВИЛ
 import { fetchPeriods, setSelectedPeriod } from '../redux/slises/periodSlice'
-import { getSortByField, getUnionDate, removeDuplicates } from '../settings/helpers'
+import { getSortByField, getUnionDate, hasRole, removeDuplicates } from '../settings/helpers'
 
-import { JournalStudentTable } from '../components/JournalStudentModal/JournalStudentTable'
-import { JournalStudentModal } from '../components/JournalStudentTable/JournalStudentModal'
+import { JournalStudentTable } from '../components/JournalStudentTable/JournalStudentTable'
+import { JournalStudentModal } from '../components/JournalStudentModal/JournalStudentModal'
 import JournalHeader from '../components/DropdownComponent/DropdownForJournal/DropdownForJournal'
+import { JournalTeacherTable } from '../components/JournalTeacherTable/JournalTeacherTable'
+import { JournalTeacherModal } from '../components/JournalTeacherModal/JournalTeacherModal'
 
 export const JournalScreen = () => {
   const dispatch = useAppDispatch()
-  const { data: dataUS, loading, error } = useAppSelector((state) => state.generalStudentJournal)
+  const {
+    data: studentData,
+    loading: studentLoading,
+    error: studentError,
+  } = useAppSelector((state) => state.generalStudentJournal)
+
+  const {
+    data: teacherData,
+    loading: teacherLoading,
+    error: teacherError,
+  } = useAppSelector((state) => state.teacherJournal) // ✅ ДОБАВИЛ
+
   const { periods, loading: periodsLoading } = useAppSelector((state) => state.periods)
+  console.log(teacherData)
+
   const [isInitialLoad, setIsInitialLoad] = useState(true)
   const [isModalVisible, setIsModalVisible] = useState(false)
   const [selectedCell, setSelectedCell] = useState(null)
+  const user = useAppSelector((state) => state.user.user)
 
+  const isSeminarian = user ? hasRole(user, 'seminarian') : false
+  const isStudent = user ? hasRole(user, 'children') : false
+  const handleSaveTeacherData = (saveData: any) => {
+    // Здесь будет логика сохранения данных через API
+    console.log('Saving teacher data:', saveData)
+    // dispatch(updateStudentGrade(saveData))
+  }
   useEffect(() => {
     const loadInitialData = async () => {
       try {
@@ -39,12 +63,25 @@ export const JournalScreen = () => {
         }
 
         dispatch(setSelectedPeriod(targetPeriod))
-        await dispatch(
-          fetchJournalData({
-            start_date: targetPeriod.start_date,
-            end_date: targetPeriod.end_date,
-          })
-        ).unwrap()
+
+        if (isSeminarian) {
+          await dispatch(
+            fetchTeacherJournalData({
+              start_date: targetPeriod.start_date,
+              end_date: targetPeriod.end_date,
+              type: 'group',
+              direction: 1,
+              groups: 525,
+            })
+          ).unwrap()
+        } else if (isStudent) {
+          await dispatch(
+            fetchJournalData({
+              start_date: targetPeriod.start_date,
+              end_date: targetPeriod.end_date,
+            })
+          ).unwrap()
+        }
       } catch (error) {
         console.error('Error loading data:', error)
       } finally {
@@ -53,21 +90,59 @@ export const JournalScreen = () => {
     }
 
     loadInitialData()
-  }, [dispatch])
+  }, [dispatch, isSeminarian, isStudent])
 
-  const data = dataUS !== null && dataUS !== undefined ? dataUS : { directions: [], dates: [] }
-  const unionDates =
-    data.dates && data.dates.length > 0
-      ? getUnionDate(removeDuplicates(data.dates)).slice().sort(getSortByField('date'))
-      : []
+  const data = isSeminarian ? teacherData : studentData
+  const loading = isSeminarian ? teacherLoading : studentLoading
 
-  const openModal = (direction, unionDate, lesson) => {
-    setSelectedCell({
-      direction: direction.name,
-      date: unionDate.date,
-      lesson: lesson,
-      topic: lesson.topic,
-    })
+  const saveGradeAndComment = () => {
+    console.log('save')
+  }
+
+  const getTableData = () => {
+    if (isSeminarian && teacherData) {
+      return {
+        dates: teacherData.dates || [],
+        children: teacherData.children || [],
+      }
+    } else if (isStudent && studentData) {
+      const validData =
+        studentData !== null && studentData !== undefined
+          ? studentData
+          : { directions: [], dates: [] }
+
+      return {
+        dates:
+          validData.dates && validData.dates.length > 0
+            ? getUnionDate(removeDuplicates(validData.dates)).slice().sort(getSortByField('date'))
+            : [],
+        directions: validData.directions || [],
+      }
+    }
+
+    return { dates: [], directions: [], children: [] }
+  }
+
+  const tableData = getTableData()
+
+  const openModal = (item, date, lessonData) => {
+    if (isSeminarian) {
+      setSelectedCell({
+        student: item.name,
+        date: date.date,
+        lesson: lessonData,
+        grades: lessonData?.grades || [],
+        status: lessonData?.status || '',
+      })
+    } else {
+      // Для ученика - оставляем как было
+      setSelectedCell({
+        direction: item.name,
+        date: date.date,
+        lesson: lessonData,
+        topic: lessonData?.topic || '',
+      })
+    }
     setIsModalVisible(true)
   }
 
@@ -76,19 +151,54 @@ export const JournalScreen = () => {
     setSelectedCell(null)
   }
 
-  if (isInitialLoad || periodsLoading) {
+  const renderTable = () => {
+    if (isSeminarian) {
+      return (
+        <JournalTeacherTable data={tableData} dates={tableData.dates} onCellPress={openModal} />
+      )
+    } else if (isStudent) {
+      return (
+        <JournalStudentTable data={tableData} dates={tableData.dates} onCellPress={openModal} />
+      )
+    } else {
+      return (
+        <View style={styles.fallbackContainer}>
+          <Text style={styles.fallbackText}>Таблица не доступна для вашей роли</Text>
+        </View>
+      )
+    }
+  }
+
+  if (isInitialLoad || periodsLoading || loading) {
     return <Text>Loading</Text>
+  }
+
+  if (!data) {
+    return (
+      <View style={styles.fallbackContainer}>
+        <Text style={styles.fallbackText}>Нет данных для отображения</Text>
+      </View>
+    )
   }
 
   return (
     <ScrollView style={styles.container}>
       <JournalHeader />
-      <JournalStudentTable data={data} dates={unionDates} onCellPress={openModal} />
-      <JournalStudentModal
-        visible={isModalVisible}
-        selectedCell={selectedCell}
-        onClose={closeModal}
-      />
+      {renderTable()}
+      {isSeminarian ? (
+        <JournalTeacherModal
+          visible={isModalVisible}
+          selectedCell={selectedCell}
+          onClose={closeModal}
+          onSave={saveGradeAndComment}
+        />
+      ) : (
+        <JournalStudentModal
+          visible={isModalVisible}
+          selectedCell={selectedCell}
+          onClose={closeModal}
+        />
+      )}
     </ScrollView>
   )
 }
@@ -97,5 +207,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
+  },
+  fallbackContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  fallbackText: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
   },
 })
