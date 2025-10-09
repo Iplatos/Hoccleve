@@ -38,6 +38,7 @@ import { UniversalModal } from '../components/UniversalModal/UniversalModal.tsx'
 import { getUrl } from '../settings/utils.ts'
 import { CreateChatScreen } from './CreateChatScreen.tsx'
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import { hasRole } from '../settings/helpers.tsx'
 
 interface ChatItem {
   id: string
@@ -277,7 +278,9 @@ export const ChatScreen = ({ navigation }: any) => {
 
     setChatId(null)
   }
+  const user = useAppSelector((state) => state.user.user)
 
+  const isSeminarian = user ? hasRole(user, 'seminarian') : false
   return (
     <>
       {/*<GestureHandlerRootView style={{flex: 1}}>*/}
@@ -333,7 +336,7 @@ export const ChatScreen = ({ navigation }: any) => {
                     onBlur={() => setIsSearchFocused(false)}
                     onLayout={() => setIsSearchFocused(false)}
                   />
-                  {userRole._j === 'children' && (
+                  {isSeminarian && (
                     <IconButton
                       icon="plus-circle-outline"
                       size={25}

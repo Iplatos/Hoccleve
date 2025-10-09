@@ -42,6 +42,7 @@ import conferenceWithoutStatusSlice, {
 import homeworkTimerSlice from '../slises/homeworkTimerSlice.ts'
 import generalStudentJournalSlice from '../slises/generalStudentJournalSlice.ts'
 import periodSlice from '../slises/periodSlice.ts'
+import teacherJournalSlice from '../slises/teacherJournalSlice.ts'
 
 const store = configureStore({
   reducer: {
@@ -87,7 +88,7 @@ const store = configureStore({
     platform: platformSlice,
     banners: bannerSlice,
     survey: SurveySlice,
-
+    teacherJournal: teacherJournalSlice,
     chats: chatSlice,
     chatActiveUsers: activeUsersSlice,
 
