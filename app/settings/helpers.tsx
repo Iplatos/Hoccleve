@@ -91,6 +91,20 @@ export const convertJsonToHtml = (json: string) => {
     return <></>
   }
 }
+
+export const removeDuplicates = (dates) => {
+  const newDates = []
+  dates.forEach((date) => {
+    if (!newDates.some((newDate) => newDate.id == date.id)) newDates.push(date)
+  })
+  return newDates
+}
+export const getSortByField = (field) => (el1, el2) => {
+  if (el1[field] > el2[field]) return 1
+  if (el1[field] < el2[field]) return -1
+  if (el1[field] == el2[field]) return 0
+}
+// Функция для объединения дат
 export const getUnionDate = (dates) => {
   const newDates = []
   dates.forEach((date) => {
@@ -126,17 +140,3 @@ export const getUnionDate = (dates) => {
   })
   return newDates
 }
-export const removeDuplicates = (dates) => {
-  const newDates = []
-  dates.forEach((date) => {
-    if (!newDates.some((newDate) => newDate.id == date.id)) newDates.push(date)
-  })
-  return newDates
-}
-export const getSortByField = (field) => (el1, el2) => {
-  if (el1[field] > el2[field]) return 1
-  if (el1[field] < el2[field]) return -1
-  if (el1[field] == el2[field]) return 0
-}
-
-export default getSortByField

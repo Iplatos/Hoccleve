@@ -42,7 +42,7 @@ const DropdownForJournal: React.FC<DropdownForJournalProps> = ({
   )
 }
 
-const JournalHeader = () => {
+export const JournalHeader = () => {
   const dispatch = useAppDispatch()
   const { periods } = useAppSelector((state) => state.periods)
 
