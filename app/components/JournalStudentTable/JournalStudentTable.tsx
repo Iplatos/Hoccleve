@@ -8,7 +8,7 @@ interface JournalTableProps {
 }
 
 export const JournalStudentTable: React.FC<JournalTableProps> = ({ data, dates, onCellPress }) => {
-  const FIXED_COLUMN_WIDTH = 80
+  const FIXED_COLUMN_WIDTH = 100
   const DATA_COLUMN_WIDTH = 60
 
   const horizontalScrollRef = useRef(null)

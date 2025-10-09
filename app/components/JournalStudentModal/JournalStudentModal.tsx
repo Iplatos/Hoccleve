@@ -25,6 +25,7 @@ export const JournalStudentModal: React.FC<LessonModalProps> = ({
       ? getColorByStatus(lesson.lessonData.status)
       : ''
   }
+  console.log(selectedCell, 'lfnfnfnfnfnf')
 
   const getColorByStatus = (status) => {
     switch (status) {
