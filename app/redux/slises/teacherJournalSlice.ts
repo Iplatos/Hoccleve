@@ -39,7 +39,12 @@ export const fetchTeacherJournalData = createAsyncThunk(
       const response = await axiosInstance.get('/v1/journal-beta/general-journal', { params })
 
       if (response.data.status === 'success') {
-        return response.data.data
+        console.log('sliiiiiiiiiiiiiiiiice')
+
+        console.log(params)
+        console.log(response)
+
+        return response.data.data.data
       } else {
         return rejectWithValue('API returned error status')
       }

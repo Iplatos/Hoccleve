@@ -1,14 +1,26 @@
 import React, { useEffect, useState } from 'react'
-import { View, Text, TouchableOpacity, StyleSheet, Modal, Alert, TextInput } from 'react-native'
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Modal,
+  Alert,
+  TextInput,
+  ActivityIndicator,
+} from 'react-native'
 import { Dropdown } from 'react-native-element-dropdown'
 import DateTimePicker from 'react-native-modal-datetime-picker'
 import { fetchJournalData } from '../../../redux/slises/generalStudentJournalSlice'
 import { useAppDispatch, useAppSelector } from '../../../redux/hooks'
 import { setSelectedPeriod } from '../../../redux/slises/periodSlice'
+import { fetchDirectionGroupWithReplacement } from '../../../redux/slises/directionGroupSlice'
+import { fetchUserDirections } from '../../../redux/slises/userDirectionsSlice'
 
 interface DropdownItem {
   label: string
   value: string | number | null
+  direction?: any
 }
 
 interface DropdownForJournalProps {
@@ -16,15 +28,17 @@ interface DropdownForJournalProps {
   value: string | number | null
   onValueChange: (item: DropdownItem) => void
   placeholder?: string
-  searchable?: boolean // Новый проп
+  searchable?: boolean
+  disabled?: boolean
 }
 
 const DropdownForJournal: React.FC<DropdownForJournalProps> = ({
   data,
   value,
+  disabled,
   onValueChange,
   placeholder,
-  searchable = false, // По умолчанию false
+  searchable = false,
 }) => {
   return (
     <Dropdown
@@ -34,9 +48,10 @@ const DropdownForJournal: React.FC<DropdownForJournalProps> = ({
       inputSearchStyle={styles.inputSearchStyle}
       iconStyle={styles.iconStyle}
       data={data}
-      search={searchable} // Включаем поиск
+      search={searchable}
       searchPlaceholder="Поиск..."
       maxHeight={300}
+      //disable={disabled}
       labelField="label"
       activeColor="#6E368C"
       valueField="value"
@@ -47,9 +62,27 @@ const DropdownForJournal: React.FC<DropdownForJournalProps> = ({
   )
 }
 
-export const JournalHeader = () => {
+interface JournalHeaderProps {
+  selectedDirection: number | null
+  selectedGroup: number | null
+  onDirectionChange: (directionId: number) => void
+  onGroupChange: (groupId: number) => void
+  isGroupDropdownDisabled: boolean
+}
+
+export const JournalHeader: React.FC<JournalHeaderProps> = ({
+  selectedDirection,
+  selectedGroup,
+  onDirectionChange,
+  onGroupChange,
+  isGroupDropdownDisabled,
+}) => {
   const dispatch = useAppDispatch()
   const { periods } = useAppSelector((state) => state.periods)
+  const { user } = useAppSelector((state) => state.user)
+  const { directionGroups, loading: directionGroupsLoading } = useAppSelector(
+    (state) => state.directionGroup
+  )
 
   const [firstDropdownValue, setFirstDropdownValue] = useState<
     'default' | 'daily' | 'custom' | null
@@ -61,24 +94,70 @@ export const JournalHeader = () => {
   const [startDate, setStartDate] = useState<string | null>(null)
   const [endDate, setEndDate] = useState<string | null>(null)
   const [datePickerMode, setDatePickerMode] = useState('start')
-  const [selectedSubject, setSelectedSubject] = useState<number | null>(null)
+
+  const {
+    userDirections,
+    loading: userDirectionsloading,
+    error,
+  } = useAppSelector((state) => state.userDirections)
+
+  console.log(userDirections)
+  console.log(directionGroups)
+
   const firstDropdownData = [
     { label: 'Периоды по умолчанию', value: 'default' },
     { label: 'Периоды по дням', value: 'daily' },
     { label: 'Выбрать период', value: 'custom' },
   ]
 
+  // Исправляем интерфейс DropdownItem
+  interface ExtendedDropdownItem extends DropdownItem {
+    direction?: any
+    direction_id?: number
+  }
+
+  const subjectsData: ExtendedDropdownItem[] = userDirections.map((userDirection) => ({
+    label: userDirection.direction.name,
+    value: userDirection.direction_id,
+    direction: userDirection.direction,
+  }))
+
+  const uniqueSubjectsData: ExtendedDropdownItem[] = userDirections.reduce((acc, userDirection) => {
+    const directionName = userDirection.direction.name
+    if (!acc.find((item) => item.label === directionName)) {
+      acc.push({
+        label: directionName,
+        value: userDirection.direction_id,
+        direction: userDirection.direction,
+      })
+    }
+    return acc
+  }, [] as ExtendedDropdownItem[])
+
+  const directionGroupsData: ExtendedDropdownItem[] =
+    directionGroups && Array.isArray(directionGroups)
+      ? directionGroups.map((group) => ({
+          label: group.name,
+          value: group.value,
+          direction_id: group.direction_id,
+        }))
+      : []
+
   const dataForDropDown = periods.map((period) => ({
     label: period.name,
     value: period.id,
   }))
 
-  const handleFirstDropdownChange = (item) => {
-    setFirstDropdownValue(item.value)
+  const handleFirstDropdownChange = (item: DropdownItem) => {
+    setFirstDropdownValue(item.value as 'default' | 'daily' | 'custom')
     setSecondDropdownValue(null)
   }
 
   useEffect(() => {
+    if (user) {
+      dispatch(fetchDirectionGroupWithReplacement(user.id))
+      dispatch(fetchUserDirections(user.id))
+    }
     if (periods.length > 0 && firstDropdownValue === 'default' && !secondDropdownValue) {
       const firstPeriod = periods[0]
       setSecondDropdownValue(firstPeriod.id)
@@ -90,7 +169,7 @@ export const JournalHeader = () => {
         })
       )
     }
-  }, [periods, firstDropdownValue, secondDropdownValue, dispatch])
+  }, [periods, firstDropdownValue, secondDropdownValue, dispatch, user])
 
   const handleSecondDropdownChange = (item: DropdownItem) => {
     const currentPeriod = periods.find((data) => data.id === item.value)
@@ -107,6 +186,14 @@ export const JournalHeader = () => {
         })
       )
     }
+  }
+
+  const handleSubjectChange = (item: ExtendedDropdownItem) => {
+    onDirectionChange(item.value as number)
+  }
+
+  const handleDirectionGroupChange = (item: ExtendedDropdownItem) => {
+    onGroupChange(item.value as number)
   }
 
   const handleDailyDateSelect = () => {
@@ -213,24 +300,7 @@ export const JournalHeader = () => {
         return null
     }
   }
-  const subjectsData = [
-    { label: 'Русский язык', value: 1 },
-    { label: 'Русская литература', value: 2 },
-    { label: 'Математика', value: 3 },
-    { label: 'Физика', value: 4 },
-    { label: 'Химия', value: 5 },
-    { label: 'Биология', value: 6 },
-    { label: 'История', value: 7 },
-    { label: 'Обществознание', value: 8 },
-    { label: 'География', value: 9 },
-    { label: 'Английский язык', value: 10 },
-    { label: 'Информатика', value: 11 },
-  ]
-  const handleSubjectChange = (item: DropdownItem) => {
-    setSelectedSubject(item.value as number)
-    // Здесь можно добавить логику для загрузки данных по предмету
-    console.log('Выбран предмет:', item)
-  }
+
   return (
     <View style={styles.container}>
       <View style={{ flexDirection: 'column', width: '100%' }}>
@@ -241,60 +311,57 @@ export const JournalHeader = () => {
               value={firstDropdownValue}
               onValueChange={handleFirstDropdownChange}
               placeholder="Тип периода"
+              disabled={isGroupDropdownDisabled}
             />
           </View>
           <View style={styles.dropdownWrapper}>{renderSecondDropdown()}</View>
         </View>
         <View style={{ width: '100%', flexDirection: 'row' }}>
           <View style={styles.dropdownWrapper}>
-            <DropdownForJournal
-              data={subjectsData}
-              value={selectedSubject}
-              onValueChange={handleSubjectChange}
-              placeholder="Выберите предмет"
-              searchable={true}
-            />
+            {userDirectionsloading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="small" color="#6E368C" />
+                <Text style={styles.loadingText}>Загрузка предметов...</Text>
+              </View>
+            ) : subjectsData.length > 0 ? (
+              <DropdownForJournal
+                data={subjectsData}
+                value={selectedDirection} // Используем переданный пропс
+                onValueChange={handleSubjectChange}
+                placeholder="Выберите предмет"
+                searchable={true}
+              />
+            ) : (
+              <View style={styles.noDataContainer}>
+                <Text style={styles.noDataText}>Нет доступных предметов</Text>
+              </View>
+            )}
           </View>
           <View style={styles.dropdownWrapper}>
-            <DropdownForJournal
-              data={firstDropdownData}
-              value={firstDropdownValue}
-              onValueChange={handleFirstDropdownChange}
-              placeholder="Тип периода"
-            />
+            {directionGroupsLoading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="small" color="#6E368C" />
+                <Text style={styles.loadingText}>Загрузка групп...</Text>
+              </View>
+            ) : directionGroupsData.length > 0 ? (
+              <DropdownForJournal
+                data={directionGroupsData}
+                value={selectedGroup} // Используем переданный пропс
+                onValueChange={handleDirectionGroupChange}
+                placeholder="Выберите группу"
+                searchable={true}
+                disabled={isGroupDropdownDisabled} // Добавляем disabled
+              />
+            ) : (
+              <View style={styles.noDataContainer}>
+                <Text style={styles.noDataText}>Нет доступных групп</Text>
+              </View>
+            )}
           </View>
         </View>
       </View>
 
-      {/* Date Picker для дней */}
-      <DateTimePicker
-        isVisible={isDatePickerVisible && firstDropdownValue === 'daily'}
-        mode="date"
-        date={selectedDate}
-        onConfirm={handleDateConfirm}
-        onCancel={() => setIsDatePickerVisible(false)}
-        locale="ru_RU"
-        cancelTextIOS="Отмена"
-        confirmTextIOS="OK"
-      />
-
-      <DateTimePicker
-        isVisible={isDatePickerVisible && firstDropdownValue === 'custom'}
-        mode="date"
-        date={
-          datePickerMode === 'start' && startDate
-            ? new Date(startDate)
-            : datePickerMode === 'end' && endDate
-            ? new Date(endDate)
-            : new Date()
-        }
-        onConfirm={handlePeriodDateConfirm}
-        onCancel={() => setIsDatePickerVisible(false)}
-        locale="ru_RU"
-        cancelTextIOS="Отмена"
-        confirmTextIOS="OK"
-      />
-
+      {/* Восстановленная модалка для выбора периода */}
       <Modal
         visible={isPeriodModalVisible}
         animationType="slide"
@@ -336,9 +403,40 @@ export const JournalHeader = () => {
           </View>
         </View>
       </Modal>
+
+      {/* Date Pickers */}
+      <DateTimePicker
+        isVisible={isDatePickerVisible && firstDropdownValue === 'daily'}
+        mode="date"
+        date={selectedDate}
+        onConfirm={handleDateConfirm}
+        onCancel={() => setIsDatePickerVisible(false)}
+        locale="ru_RU"
+        cancelTextIOS="Отмена"
+        confirmTextIOS="OK"
+      />
+
+      <DateTimePicker
+        isVisible={isDatePickerVisible && firstDropdownValue === 'custom'}
+        mode="date"
+        date={
+          datePickerMode === 'start' && startDate
+            ? new Date(startDate)
+            : datePickerMode === 'end' && endDate
+            ? new Date(endDate)
+            : new Date()
+        }
+        onConfirm={handlePeriodDateConfirm}
+        onCancel={() => setIsDatePickerVisible(false)}
+        locale="ru_RU"
+        cancelTextIOS="Отмена"
+        confirmTextIOS="OK"
+      />
     </View>
   )
 }
+
+// Стили остаются без изменений
 
 const styles = StyleSheet.create({
   container: {
@@ -369,7 +467,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#333',
   },
-
   inputSearchStyle: {
     height: 40,
     fontSize: 16,
@@ -464,11 +561,6 @@ const styles = StyleSheet.create({
     color: '#666',
     textAlign: 'center',
   },
-  weekInfoText: {
-    fontSize: 12,
-    color: '#999',
-    textAlign: 'center',
-  },
   closeButton: {
     backgroundColor: '#f0f0f0',
     paddingVertical: 12,
@@ -478,6 +570,37 @@ const styles = StyleSheet.create({
     color: '#333',
     textAlign: 'center',
     fontSize: 16,
+  },
+  loadingContainer: {
+    height: 50,
+    borderColor: '#6E368C',
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    backgroundColor: 'white',
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 10,
+  },
+  loadingText: {
+    fontSize: 14,
+    color: '#666',
+  },
+  noDataContainer: {
+    height: 50,
+    borderColor: '#ccc',
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    backgroundColor: '#f9f9f9',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  noDataText: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
   },
 })
 

@@ -43,6 +43,8 @@ import homeworkTimerSlice from '../slises/homeworkTimerSlice.ts'
 import generalStudentJournalSlice from '../slises/generalStudentJournalSlice.ts'
 import periodSlice from '../slises/periodSlice.ts'
 import teacherJournalSlice from '../slises/teacherJournalSlice.ts'
+import directionGroupSlice from '../slises/directionGroupSlice.ts'
+import userDirectionsSlice from '../slises/userDirectionsSlice.ts'
 
 const store = configureStore({
   reducer: {
@@ -94,8 +96,10 @@ const store = configureStore({
 
     currentScreen: currentScreenSlice,
     generalStudentJournal: generalStudentJournalSlice,
+    userDirections: userDirectionsSlice,
     [baseApi.reducerPath]: baseApi.reducer,
     periods: periodSlice,
+    directionGroup: directionGroupSlice,
   },
   middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(baseApi.middleware),
 })
