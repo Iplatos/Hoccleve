@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react'
-import { ScrollView, View, Text, StyleSheet } from 'react-native'
+import { ScrollView, View, Text, StyleSheet, ToastAndroid, Platform, Alert } from 'react-native'
 import { useAppDispatch, useAppSelector } from '../redux/hooks'
 import { fetchJournalData } from '../redux/slises/generalStudentJournalSlice'
-import { fetchTeacherJournalData } from '../redux/slises/teacherJournalSlice' // ✅ ДОБАВИЛ
+import { fetchTeacherJournalData } from '../redux/slises/teacherJournalSlice'
 import { fetchPeriods, setSelectedPeriod } from '../redux/slises/periodSlice'
 import { getSortByField, getUnionDate, hasRole, removeDuplicates } from '../settings/helpers'
 
@@ -24,32 +24,77 @@ export const JournalScreen = () => {
     data: teacherData,
     loading: teacherLoading,
     error: teacherError,
-  } = useAppSelector((state) => state.teacherJournal) // ✅ ДОБАВИЛ
+  } = useAppSelector((state) => state.teacherJournal)
 
   const { periods, loading: periodsLoading } = useAppSelector((state) => state.periods)
-  console.log(teacherData)
+  const { userDirections } = useAppSelector((state) => state.userDirections)
+  const { directionGroups } = useAppSelector((state) => state.directionGroup)
 
   const [isInitialLoad, setIsInitialLoad] = useState(true)
   const [isModalVisible, setIsModalVisible] = useState(false)
   const [selectedCell, setSelectedCell] = useState(null)
+  const [selectedDirection, setSelectedDirection] = useState<number | null>(null)
+  const [selectedGroup, setSelectedGroup] = useState<number | null>(null)
+
   const user = useAppSelector((state) => state.user.user)
 
   const isSeminarian = user ? hasRole(user, 'seminarian') : false
   const isStudent = user ? hasRole(user, 'children') : false
-  const handleSaveTeacherData = (saveData: any) => {
-    // Здесь будет логика сохранения данных через API
-    console.log('Saving teacher data:', saveData)
-    // dispatch(updateStudentGrade(saveData))
+
+  // Функция для показа Toast
+  const showToast = (message: string) => {
+    if (Platform.OS === 'android') {
+      ToastAndroid.show(message, ToastAndroid.SHORT)
+    } else {
+      Alert.alert('Внимание', message)
+    }
   }
+
+  // Обработчик выбора направления
+  const handleDirectionChange = (directionId: number) => {
+    setSelectedDirection(directionId)
+    setSelectedGroup(null) // Сбрасываем выбранную группу при смене направления
+    showToast('Направление выбрано. Теперь выберите группу.')
+  }
+
+  // Обработчик выбора группы
+  const handleGroupChange = (groupId: number) => {
+    if (!selectedDirection) {
+      showToast('Сначала выберите направление')
+      return
+    }
+    setSelectedGroup(groupId)
+
+    // Делаем запрос за учениками при выборе группы
+    if (selectedPeriod) {
+      dispatch(
+        fetchTeacherJournalData({
+          start_date: selectedPeriod.start_date,
+          end_date: selectedPeriod.end_date,
+          type: 'group',
+          direction: selectedDirection,
+          groups: groupId,
+        })
+      )
+    }
+  }
+
+  // Блокировка dropdown групп если не выбрано направление
+  const isGroupDropdownDisabled = !selectedDirection
+
+  const handleSaveTeacherData = (saveData: any) => {
+    console.log('Saving teacher data:', saveData)
+  }
+
   useEffect(() => {
     const loadInitialData = async () => {
       try {
         const periodsData = await dispatch(fetchPeriods()).unwrap()
         let targetPeriod = null
-        console.log(periodsData)
 
         if (periodsData && periodsData.length > 0) {
           targetPeriod = periodsData[0]
+          dispatch(setSelectedPeriod(targetPeriod))
         } else {
           const endDate = new Date().toISOString().split('T')[0]
           const startDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
@@ -61,21 +106,11 @@ export const JournalScreen = () => {
             start_date: startDate,
             end_date: endDate,
           }
+          dispatch(setSelectedPeriod(targetPeriod))
         }
 
-        dispatch(setSelectedPeriod(targetPeriod))
-
-        if (isSeminarian) {
-          await dispatch(
-            fetchTeacherJournalData({
-              start_date: targetPeriod.start_date,
-              end_date: targetPeriod.end_date,
-              type: 'group',
-              direction: 1,
-              groups: 525,
-            })
-          ).unwrap()
-        } else if (isStudent) {
+        // Для семинариста загружаем данные только если выбраны направление и группа
+        if (isStudent) {
           await dispatch(
             fetchJournalData({
               start_date: targetPeriod.start_date,
@@ -83,6 +118,7 @@ export const JournalScreen = () => {
             })
           ).unwrap()
         }
+        // Для семинариста данные загрузим позже, когда выберут направление и группу
       } catch (error) {
         console.error('Error loading data:', error)
       } finally {
@@ -92,6 +128,9 @@ export const JournalScreen = () => {
 
     loadInitialData()
   }, [dispatch, isSeminarian, isStudent])
+
+  // Получаем выбранный период из Redux
+  const selectedPeriod = useAppSelector((state) => state.periods.selectedPeriod)
 
   const data = isSeminarian ? teacherData : studentData
   const loading = isSeminarian ? teacherLoading : studentLoading
@@ -136,7 +175,6 @@ export const JournalScreen = () => {
         status: lessonData?.status || '',
       })
     } else {
-      // Для ученика - оставляем как было
       setSelectedCell({
         direction: item.name,
         date: date.date,
@@ -153,11 +191,32 @@ export const JournalScreen = () => {
   }
 
   const renderTable = () => {
+    // Для семинариста показываем таблицу только если есть данные
     if (isSeminarian) {
+      // Добавляем проверку на существование teacherData и его свойств
+      if (!teacherData || !teacherData.children || teacherData.children.length === 0) {
+        return (
+          <View style={styles.fallbackContainer}>
+            <Text style={styles.fallbackText}>
+              {selectedDirection && selectedGroup
+                ? 'Загрузка данных...'
+                : 'Выберите направление и группу для отображения журнала'}
+            </Text>
+          </View>
+        )
+      }
       return (
         <JournalTeacherTable data={tableData} dates={tableData.dates} onCellPress={openModal} />
       )
     } else if (isStudent) {
+      // Также добавляем проверку для студента
+      if (!studentData || !studentData.directions || studentData.directions.length === 0) {
+        return (
+          <View style={styles.fallbackContainer}>
+            <Text style={styles.fallbackText}>Нет данных для отображения</Text>
+          </View>
+        )
+      }
       return (
         <JournalStudentTable data={tableData} dates={tableData.dates} onCellPress={openModal} />
       )
@@ -170,21 +229,32 @@ export const JournalScreen = () => {
     }
   }
 
-  if (isInitialLoad || periodsLoading || loading) {
+  // Передаем обработчики в JournalHeader
+  const journalHeaderProps = {
+    selectedDirection,
+    selectedGroup,
+    onDirectionChange: handleDirectionChange,
+    onGroupChange: handleGroupChange,
+    isGroupDropdownDisabled,
+  }
+
+  if (isInitialLoad || periodsLoading) {
     return <Text>Loading</Text>
   }
 
-  if (!data) {
+  if (!isSeminarian && (!studentData || !studentData.directions)) {
     return (
       <View style={styles.fallbackContainer}>
         <Text style={styles.fallbackText}>Нет данных для отображения</Text>
       </View>
     )
   }
-
+  if (loading) {
+    return <Text>Loadingi</Text>
+  }
   return (
     <ScrollView style={styles.container}>
-      <JournalHeader />
+      <JournalHeader {...journalHeaderProps} />
       {renderTable()}
       {isSeminarian ? (
         <JournalTeacherModal
