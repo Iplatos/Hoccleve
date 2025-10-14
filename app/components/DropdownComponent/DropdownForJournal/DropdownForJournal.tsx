@@ -1,9 +1,10 @@
-import React, { useState } from 'react'
-import { View, Text, TouchableOpacity, StyleSheet, Modal, Alert } from 'react-native'
+import React, { useEffect, useState } from 'react'
+import { View, Text, TouchableOpacity, StyleSheet, Modal, Alert, TextInput } from 'react-native'
 import { Dropdown } from 'react-native-element-dropdown'
 import DateTimePicker from 'react-native-modal-datetime-picker'
 import { fetchJournalData } from '../../../redux/slises/generalStudentJournalSlice'
 import { useAppDispatch, useAppSelector } from '../../../redux/hooks'
+import { setSelectedPeriod } from '../../../redux/slises/periodSlice'
 
 interface DropdownItem {
   label: string
@@ -15,6 +16,7 @@ interface DropdownForJournalProps {
   value: string | number | null
   onValueChange: (item: DropdownItem) => void
   placeholder?: string
+  searchable?: boolean // Новый проп
 }
 
 const DropdownForJournal: React.FC<DropdownForJournalProps> = ({
@@ -22,6 +24,7 @@ const DropdownForJournal: React.FC<DropdownForJournalProps> = ({
   value,
   onValueChange,
   placeholder,
+  searchable = false, // По умолчанию false
 }) => {
   return (
     <Dropdown
@@ -31,6 +34,8 @@ const DropdownForJournal: React.FC<DropdownForJournalProps> = ({
       inputSearchStyle={styles.inputSearchStyle}
       iconStyle={styles.iconStyle}
       data={data}
+      search={searchable} // Включаем поиск
+      searchPlaceholder="Поиск..."
       maxHeight={300}
       labelField="label"
       activeColor="#6E368C"
@@ -48,25 +53,24 @@ export const JournalHeader = () => {
 
   const [firstDropdownValue, setFirstDropdownValue] = useState<
     'default' | 'daily' | 'custom' | null
-  >(null)
-  const [secondDropdownValue, setSecondDropdownValue] = useState(null)
+  >('default')
+  const [secondDropdownValue, setSecondDropdownValue] = useState<number | null>(null)
   const [isDatePickerVisible, setIsDatePickerVisible] = useState(false)
   const [isPeriodModalVisible, setIsPeriodModalVisible] = useState(false)
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [startDate, setStartDate] = useState<string | null>(null)
   const [endDate, setEndDate] = useState<string | null>(null)
-  const [datePickerMode, setDatePickerMode] = useState('start') // 'start' or 'end'
-
+  const [datePickerMode, setDatePickerMode] = useState('start')
+  const [selectedSubject, setSelectedSubject] = useState<number | null>(null)
   const firstDropdownData = [
     { label: 'Периоды по умолчанию', value: 'default' },
     { label: 'Периоды по дням', value: 'daily' },
     { label: 'Выбрать период', value: 'custom' },
   ]
 
-  const periodData = periods.map((period) => ({
+  const dataForDropDown = periods.map((period) => ({
     label: period.name,
     value: period.id,
-    ...period,
   }))
 
   const handleFirstDropdownChange = (item) => {
@@ -74,15 +78,32 @@ export const JournalHeader = () => {
     setSecondDropdownValue(null)
   }
 
-  const handleSecondDropdownChange = (item) => {
-    setSecondDropdownValue(item.value)
-
-    const selectedPeriod = periods.find((p) => p.id === item.value)
-    if (selectedPeriod) {
+  useEffect(() => {
+    if (periods.length > 0 && firstDropdownValue === 'default' && !secondDropdownValue) {
+      const firstPeriod = periods[0]
+      setSecondDropdownValue(firstPeriod.id)
+      dispatch(setSelectedPeriod(firstPeriod))
       dispatch(
         fetchJournalData({
-          start_date: selectedPeriod.start_date,
-          end_date: selectedPeriod.end_date,
+          start_date: firstPeriod.start_date,
+          end_date: firstPeriod.end_date,
+        })
+      )
+    }
+  }, [periods, firstDropdownValue, secondDropdownValue, dispatch])
+
+  const handleSecondDropdownChange = (item: DropdownItem) => {
+    const currentPeriod = periods.find((data) => data.id === item.value)
+    console.log(currentPeriod)
+
+    if (currentPeriod) {
+      dispatch(setSelectedPeriod(currentPeriod))
+      setSecondDropdownValue(item.value as number)
+
+      dispatch(
+        fetchJournalData({
+          start_date: currentPeriod.start_date,
+          end_date: currentPeriod.end_date,
         })
       )
     }
@@ -161,9 +182,16 @@ export const JournalHeader = () => {
   const renderSecondDropdown = () => {
     switch (firstDropdownValue) {
       case 'default':
+        if (dataForDropDown.length === 0) {
+          return (
+            <View style={styles.noPeriodsContainer}>
+              <Text style={styles.noPeriodsText}>Нет периодов по умолчанию</Text>
+            </View>
+          )
+        }
         return (
           <DropdownForJournal
-            data={periodData}
+            data={dataForDropDown}
             value={secondDropdownValue}
             onValueChange={handleSecondDropdownChange}
             placeholder="Выберите четверть"
@@ -185,19 +213,58 @@ export const JournalHeader = () => {
         return null
     }
   }
-
+  const subjectsData = [
+    { label: 'Русский язык', value: 1 },
+    { label: 'Русская литература', value: 2 },
+    { label: 'Математика', value: 3 },
+    { label: 'Физика', value: 4 },
+    { label: 'Химия', value: 5 },
+    { label: 'Биология', value: 6 },
+    { label: 'История', value: 7 },
+    { label: 'Обществознание', value: 8 },
+    { label: 'География', value: 9 },
+    { label: 'Английский язык', value: 10 },
+    { label: 'Информатика', value: 11 },
+  ]
+  const handleSubjectChange = (item: DropdownItem) => {
+    setSelectedSubject(item.value as number)
+    // Здесь можно добавить логику для загрузки данных по предмету
+    console.log('Выбран предмет:', item)
+  }
   return (
     <View style={styles.container}>
-      <View style={styles.dropdownWrapper}>
-        <DropdownForJournal
-          data={firstDropdownData}
-          value={firstDropdownValue}
-          onValueChange={handleFirstDropdownChange}
-          placeholder="Тип периода"
-        />
+      <View style={{ flexDirection: 'column', width: '100%' }}>
+        <View style={{ width: '100%', flexDirection: 'row' }}>
+          <View style={styles.dropdownWrapper}>
+            <DropdownForJournal
+              data={firstDropdownData}
+              value={firstDropdownValue}
+              onValueChange={handleFirstDropdownChange}
+              placeholder="Тип периода"
+            />
+          </View>
+          <View style={styles.dropdownWrapper}>{renderSecondDropdown()}</View>
+        </View>
+        <View style={{ width: '100%', flexDirection: 'row' }}>
+          <View style={styles.dropdownWrapper}>
+            <DropdownForJournal
+              data={subjectsData}
+              value={selectedSubject}
+              onValueChange={handleSubjectChange}
+              placeholder="Выберите предмет"
+              searchable={true}
+            />
+          </View>
+          <View style={styles.dropdownWrapper}>
+            <DropdownForJournal
+              data={firstDropdownData}
+              value={firstDropdownValue}
+              onValueChange={handleFirstDropdownChange}
+              placeholder="Тип периода"
+            />
+          </View>
+        </View>
       </View>
-
-      <View style={styles.dropdownWrapper}>{renderSecondDropdown()}</View>
 
       {/* Date Picker для дней */}
       <DateTimePicker
@@ -211,7 +278,6 @@ export const JournalHeader = () => {
         confirmTextIOS="OK"
       />
 
-      {/* Date Picker для периода */}
       <DateTimePicker
         isVisible={isDatePickerVisible && firstDropdownValue === 'custom'}
         mode="date"
@@ -276,11 +342,11 @@ export const JournalHeader = () => {
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'row',
     paddingHorizontal: 15,
     paddingVertical: 10,
     backgroundColor: '#f8f8f8',
     borderBottomWidth: 1,
+    flexDirection: 'row',
     borderBottomColor: '#e0e0e0',
   },
   dropdownWrapper: {
@@ -303,9 +369,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#333',
   },
+
   inputSearchStyle: {
     height: 40,
-    fontSize: 14,
+    fontSize: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#6E368C',
   },
   iconStyle: {
     width: 20,
@@ -379,6 +448,26 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontWeight: 'bold',
     fontSize: 16,
+  },
+  noPeriodsContainer: {
+    height: 50,
+    borderColor: '#ccc',
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    backgroundColor: '#f9f9f9',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  noPeriodsText: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+  },
+  weekInfoText: {
+    fontSize: 12,
+    color: '#999',
+    textAlign: 'center',
   },
   closeButton: {
     backgroundColor: '#f0f0f0',

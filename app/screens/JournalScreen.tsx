@@ -46,6 +46,7 @@ export const JournalScreen = () => {
       try {
         const periodsData = await dispatch(fetchPeriods()).unwrap()
         let targetPeriod = null
+        console.log(periodsData)
 
         if (periodsData && periodsData.length > 0) {
           targetPeriod = periodsData[0]

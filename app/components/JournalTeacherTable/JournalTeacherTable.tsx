@@ -10,7 +10,6 @@ interface JournalTeacherTableProps {
   onCellPress: (student: any, date: any, lessonData: any) => void
 }
 
-// ✅ ТЕСТОВЫЕ ДАННЫЕ
 const getTestData = () => {
   const testDates = [
     { id: '89286', date: '2025-10-06' },
