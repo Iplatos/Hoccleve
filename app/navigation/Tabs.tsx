@@ -56,6 +56,8 @@ export const Tabs: React.FC<{ currentScreen: string; setScreen: (screenName: str
   const ROUTE_VALUES = Object.values(ROUTES)
 
   const safeNavigate = (routeName: string) => {
+    console.log(routeName)
+
     if (ROUTE_VALUES.includes(routeName)) {
       // @ts-ignore
       navigation.navigate(routeName)

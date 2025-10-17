@@ -12,13 +12,20 @@ import {
   Platform,
   ScrollView,
   LayoutAnimation,
+  ActivityIndicator,
 } from 'react-native'
 
 interface JournalTeacherModalProps {
   visible: boolean
   selectedCell: any
   onClose: () => void
-  onSave: (data: any) => void
+  onSave: (newGrade: string, newGradeComment: string, status: string, statusComment: string) => void
+  loading?: boolean
+  // Новые пропсы только для управления новыми оценками
+  newGrades: any[]
+  onAddGrade: (newGrade: string, newGradeComment: string) => void
+  onRemoveGrade: (index: number) => void
+  onUpdateGradeComment: (index: number, comment: string) => void
 }
 
 export const JournalTeacherModal: React.FC<JournalTeacherModalProps> = ({
@@ -26,13 +33,18 @@ export const JournalTeacherModal: React.FC<JournalTeacherModalProps> = ({
   selectedCell,
   onClose,
   onSave,
+  loading = false,
+  // Новые пропсы
+  newGrades,
+  onAddGrade,
+  onRemoveGrade,
+  onUpdateGradeComment,
 }) => {
-  const [status, setStatus] = useState(selectedCell?.status || '')
-  const [statusComment, setStatusComment] = useState(selectedCell?.lesson?.comment || '')
-  const [grades, setGrades] = useState(selectedCell?.grades || [])
   const [newGrade, setNewGrade] = useState('')
   const [newGradeComment, setNewGradeComment] = useState('')
   const [contentHeights, setContentHeights] = useState<{ [key: string]: number }>({})
+  const [status, setStatus] = useState(selectedCell?.status || '')
+  const [statusComment, setStatusComment] = useState(selectedCell?.lesson?.comment || '')
 
   const statuses = [
     { status: 'П+', value: '10' },
@@ -46,7 +58,6 @@ export const JournalTeacherModal: React.FC<JournalTeacherModalProps> = ({
     if (selectedCell) {
       setStatus(selectedCell?.status || '')
       setStatusComment(selectedCell?.lesson?.comment || '')
-      setGrades(selectedCell?.grades || [])
     }
   }, [selectedCell])
 
@@ -64,12 +75,6 @@ export const JournalTeacherModal: React.FC<JournalTeacherModalProps> = ({
         return 'white'
     }
   }
-
-  const getStatusLabel = (statusValue: string) => {
-    const foundStatus = statuses.find((s) => s.value === statusValue)
-    return foundStatus ? foundStatus.status : 'Не выбран'
-  }
-
   const handleAddGrade = () => {
     if (!newGrade.trim()) {
       Alert.alert('Ошибка', 'Введите оценку')
@@ -82,51 +87,29 @@ export const JournalTeacherModal: React.FC<JournalTeacherModalProps> = ({
       return
     }
 
-    const newGradeObj = {
-      grade: gradeValue,
-      weight: 1,
-      comment: newGradeComment,
-      id: Date.now(),
-    }
-
-    setGrades([...grades, newGradeObj])
+    onAddGrade(newGrade, newGradeComment)
     setNewGrade('')
     setNewGradeComment('')
   }
-
-  const handleRemoveGrade = (index: number) => {
-    const newGrades = [...grades]
-    newGrades.splice(index, 1)
-    setGrades(newGrades)
-  }
-
   const handleSave = () => {
-    const saveData = {
-      studentId: selectedCell?.student?.id,
-      dateId: selectedCell?.date?.id,
-      status,
-      statusComment,
-      grades,
-    }
-
-    onSave(saveData)
-    onClose()
+    onSave(newGrade, newGradeComment, status, statusComment)
+    setTimeout(() => {
+      setNewGrade(''), setNewGradeComment('')
+    }, 1000)
   }
 
   const handleStatusSelect = (statusValue: string) => {
     setStatus(statusValue)
   }
 
-  // Функция для обновления высоты контента
   const updateContentHeight = (key: string, height: number) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut)
     setContentHeights((prev) => ({
       ...prev,
-      [key]: Math.max(height, 200), // Минимальная высота 200
+      [key]: Math.max(height, 200),
     }))
   }
 
-  // Вычисляем максимальную высоту для синхронизации блоков
   const getMaxContentHeight = () => {
     const gradesHeight = contentHeights['grades'] || 200
     const commentsHeight = contentHeights['comments'] || 200
@@ -135,10 +118,24 @@ export const JournalTeacherModal: React.FC<JournalTeacherModalProps> = ({
 
   const maxContentHeight = getMaxContentHeight()
 
+  const onCloseAndClearModalData = () => {
+    setNewGrade('')
+    setNewGradeComment('')
+    onClose()
+  }
+
   if (!selectedCell) return null
 
+  // Объединяем существующие и новые оценки для отображения
+  const allGrades = [...(selectedCell?.lesson?.grades || []), ...newGrades]
+
   return (
-    <Modal visible={visible} animationType="fade" transparent={true} onRequestClose={onClose}>
+    <Modal
+      visible={visible}
+      animationType="fade"
+      transparent={true}
+      onRequestClose={onCloseAndClearModalData}
+    >
       <KeyboardAvoidingView
         style={styles.modalOverlay}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -146,7 +143,11 @@ export const JournalTeacherModal: React.FC<JournalTeacherModalProps> = ({
         <View style={styles.modalContent}>
           <View style={styles.header}>
             <View style={styles.headerTop}>
-              <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={onCloseAndClearModalData}
+                disabled={loading}
+              >
                 <Text style={styles.closeButtonText}>×</Text>
               </TouchableOpacity>
             </View>
@@ -173,6 +174,7 @@ export const JournalTeacherModal: React.FC<JournalTeacherModalProps> = ({
                         { backgroundColor: status === s.value ? getStatusColor(s.value) : 'white' },
                       ]}
                       onPress={() => handleStatusSelect(s.value)}
+                      disabled={loading}
                     >
                       <Text style={styles.statusText}>{s.status}</Text>
                     </TouchableOpacity>
@@ -194,6 +196,7 @@ export const JournalTeacherModal: React.FC<JournalTeacherModalProps> = ({
                     multiline
                     numberOfLines={3}
                     textAlignVertical="top"
+                    editable={!loading}
                   />
                 </View>
               </View>
@@ -213,13 +216,16 @@ export const JournalTeacherModal: React.FC<JournalTeacherModalProps> = ({
                     updateContentHeight('grades', height)
                   }}
                 >
-                  {/* Существующие оценки */}
-                  {grades.map((grade: any, index: number) => (
+                  {/* Все оценки (существующие + новые) */}
+                  {allGrades.map((grade: any, index: number) => (
                     <View key={index} style={styles.gradeItem}>
                       <Text style={styles.gradeText}>{grade.grade}</Text>
+                      {/* Кнопка удаления только для новых оценок */}
+
                       <TouchableOpacity
                         style={styles.removeButton}
-                        onPress={() => handleRemoveGrade(index)}
+                        onPress={() => onRemoveGrade(grade.id)}
+                        disabled={loading}
                       >
                         <Text style={styles.removeButtonText}>×</Text>
                       </TouchableOpacity>
@@ -233,9 +239,10 @@ export const JournalTeacherModal: React.FC<JournalTeacherModalProps> = ({
                         style={styles.gradeInput}
                         value={newGrade}
                         onChangeText={setNewGrade}
-                        placeholder="оценка"
+                        placeholder="Оценка"
                         keyboardType="numeric"
                         maxLength={1}
+                        editable={!loading}
                       />
                     </View>
                   </View>
@@ -254,21 +261,29 @@ export const JournalTeacherModal: React.FC<JournalTeacherModalProps> = ({
                     updateContentHeight('comments', height)
                   }}
                 >
-                  {/* Комментарии к существующим оценкам */}
-                  {grades.map((grade: any, index: number) => (
+                  {/* Комментарии ко всем оценкам */}
+                  {allGrades.map((grade: any, index: number) => (
                     <View key={index} style={styles.gradeCommentItem}>
                       <TextInput
                         style={styles.gradeCommentInput}
                         value={grade.comment}
                         onChangeText={(text) => {
-                          const newGrades = [...grades]
-                          newGrades[index].comment = text
-                          setGrades(newGrades)
+                          // Для существующих оценок - обновляем в selectedCell
+                          // Для новых - используем обработчик
+                          if (index < (selectedCell?.lesson?.grades?.length || 0)) {
+                            // TODO: обновить существующие оценки если нужно
+                          } else {
+                            onUpdateGradeComment(
+                              index - (selectedCell?.lesson?.grades?.length || 0),
+                              text
+                            )
+                          }
                         }}
                         placeholder="Комментарий..."
                         multiline
                         numberOfLines={2}
                         textAlignVertical="top"
+                        editable={!loading}
                       />
                     </View>
                   ))}
@@ -284,12 +299,13 @@ export const JournalTeacherModal: React.FC<JournalTeacherModalProps> = ({
                         multiline
                         numberOfLines={2}
                         textAlignVertical="top"
+                        editable={!loading}
                       />
                     </View>
                   )}
 
                   {/* Сообщение если нет оценок */}
-                  {grades.length === 0 && (
+                  {allGrades.length === 0 && (
                     <View style={styles.noGradesMessage}>
                       <Text style={styles.noGradesText}>Нет оценок</Text>
                     </View>
@@ -301,11 +317,23 @@ export const JournalTeacherModal: React.FC<JournalTeacherModalProps> = ({
 
           {/* Кнопки - всегда видимы */}
           <View style={styles.modalButtons}>
-            <TouchableOpacity style={styles.addGradeButton} onPress={handleAddGrade}>
+            <TouchableOpacity
+              style={[styles.addGradeButton, loading && styles.buttonDisabled]}
+              onPress={handleAddGrade}
+              disabled={loading}
+            >
               <Text style={styles.addGradeButtonText}>Добавить оценку</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-              <Text style={styles.saveButtonText}>Сохранить</Text>
+            <TouchableOpacity
+              style={[styles.saveButton, loading && styles.saveButtonDisabled]}
+              onPress={handleSave}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator size="small" color="white" />
+              ) : (
+                <Text style={styles.saveButtonText}>Сохранить</Text>
+              )}
             </TouchableOpacity>
           </View>
         </View>
@@ -588,9 +616,10 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   gradeCommentItem: {
+    paddingVertical: 8,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
-    minHeight: 50,
+    minHeight: 60,
   },
   gradeCommentInput: {
     fontSize: 14,
@@ -621,9 +650,8 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#f0f0f0',
   },
-  cancelButtonText: {
-    color: '#333',
-    fontWeight: '500',
+  buttonDisabled: {
+    backgroundColor: '#ccc',
   },
   saveButton: {
     flex: 1,
@@ -632,8 +660,15 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     alignItems: 'center',
   },
+  saveButtonDisabled: {
+    backgroundColor: '#ccc',
+  },
   saveButtonText: {
     color: 'white',
+    fontWeight: '500',
+  },
+  cancelButtonText: {
+    color: '#333',
     fontWeight: '500',
   },
 })
