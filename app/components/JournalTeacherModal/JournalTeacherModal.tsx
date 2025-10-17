@@ -21,11 +21,12 @@ interface JournalTeacherModalProps {
   onClose: () => void
   onSave: (newGrade: string, newGradeComment: string, status: string, statusComment: string) => void
   loading?: boolean
+  onUpdateExistingGradeComment?: (gradeId: number, comment: string) => void // ← добавляем
   // Новые пропсы только для управления новыми оценками
   newGrades: any[]
   onAddGrade: (newGrade: string, newGradeComment: string) => void
   onRemoveGrade: (index: number) => void
-  onUpdateGradeComment: (index: number, comment: string) => void
+  onUpdateGradeComment: (gradeId: number, comment: string) => void
 }
 
 export const JournalTeacherModal: React.FC<JournalTeacherModalProps> = ({
@@ -82,10 +83,6 @@ export const JournalTeacherModal: React.FC<JournalTeacherModalProps> = ({
     }
 
     const gradeValue = parseInt(newGrade)
-    if (gradeValue < 1 || gradeValue > 5) {
-      Alert.alert('Ошибка', 'Оценка должна быть от 1 до 5')
-      return
-    }
 
     onAddGrade(newGrade, newGradeComment)
     setNewGrade('')
@@ -111,9 +108,9 @@ export const JournalTeacherModal: React.FC<JournalTeacherModalProps> = ({
   }
 
   const getMaxContentHeight = () => {
-    const gradesHeight = contentHeights['grades'] || 200
-    const commentsHeight = contentHeights['comments'] || 200
-    return Math.max(gradesHeight, commentsHeight, 200)
+    const gradesHeight = contentHeights['grades'] || 100
+    const commentsHeight = contentHeights['comments'] || 100
+    return Math.max(gradesHeight, commentsHeight, 100)
   }
 
   const maxContentHeight = getMaxContentHeight()
@@ -220,7 +217,6 @@ export const JournalTeacherModal: React.FC<JournalTeacherModalProps> = ({
                   {allGrades.map((grade: any, index: number) => (
                     <View key={index} style={styles.gradeItem}>
                       <Text style={styles.gradeText}>{grade.grade}</Text>
-                      {/* Кнопка удаления только для новых оценок */}
 
                       <TouchableOpacity
                         style={styles.removeButton}
@@ -241,7 +237,6 @@ export const JournalTeacherModal: React.FC<JournalTeacherModalProps> = ({
                         onChangeText={setNewGrade}
                         placeholder="Оценка"
                         keyboardType="numeric"
-                        maxLength={1}
                         editable={!loading}
                       />
                     </View>
@@ -268,16 +263,7 @@ export const JournalTeacherModal: React.FC<JournalTeacherModalProps> = ({
                         style={styles.gradeCommentInput}
                         value={grade.comment}
                         onChangeText={(text) => {
-                          // Для существующих оценок - обновляем в selectedCell
-                          // Для новых - используем обработчик
-                          if (index < (selectedCell?.lesson?.grades?.length || 0)) {
-                            // TODO: обновить существующие оценки если нужно
-                          } else {
-                            onUpdateGradeComment(
-                              index - (selectedCell?.lesson?.grades?.length || 0),
-                              text
-                            )
-                          }
+                          onUpdateGradeComment(grade.id, text)
                         }}
                         placeholder="Комментарий..."
                         multiline
@@ -288,7 +274,6 @@ export const JournalTeacherModal: React.FC<JournalTeacherModalProps> = ({
                     </View>
                   ))}
 
-                  {/* Поле для комментария новой оценки */}
                   {newGrade && (
                     <View style={styles.gradeCommentItem}>
                       <TextInput
@@ -416,12 +401,6 @@ const styles = StyleSheet.create({
     marginRight: 10,
     color: '#333',
   },
-  currentStatusBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
-    minWidth: 80,
-  },
   currentStatusText: {
     fontSize: 14,
     fontWeight: 'bold',
@@ -435,20 +414,18 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   statusBlock: {
-    width: 150,
+    width: '38%',
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#e0e0e0',
     overflow: 'hidden',
-    backgroundColor: '#fff',
   },
   commentBlock: {
-    width: 150,
+    width: '58%',
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#e0e0e0',
     overflow: 'hidden',
-    backgroundColor: '#fff',
   },
   statusHeader: {
     backgroundColor: '#e0e0e0',
@@ -477,14 +454,16 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   statusGrid: {
-    flexDirection: 'row',
-    height: 40,
+    flexDirection: 'column',
+    flexWrap: 'wrap',
+    height: 80,
+    alignContent: 'space-between',
   },
   statusItem: {
     backgroundColor: 'white',
     justifyContent: 'center',
     alignItems: 'center',
-    width: '25%',
+    width: '50%',
     borderRightWidth: 1,
     borderBottomWidth: 1,
     borderColor: '#e0e0e0',
@@ -512,7 +491,7 @@ const styles = StyleSheet.create({
     minHeight: 250,
   },
   gradesBlock: {
-    width: 150,
+    width: '38%',
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#e0e0e0',
@@ -520,7 +499,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   gradesCommentBlock: {
-    width: 150,
+    width: '58%',
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#e0e0e0',
@@ -561,14 +540,24 @@ const styles = StyleSheet.create({
     padding: 12,
     minHeight: 200,
   },
+  // ФИКСИРОВАННАЯ ВЫСОТА ДЛЯ ВЫРАВНИВАНИЯ
   gradeItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 8,
+    paddingVertical: 12, // увеличиваем padding для 2 строк
+    paddingHorizontal: 4,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
-    minHeight: 40,
+    height: 60, // ФИКСИРОВАННАЯ высота как для 2 строк
+    marginBottom: 4,
+  },
+  gradeCommentItem: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+    height: 60, // ТАКАЯ ЖЕ ФИКСИРОВАННАЯ высота
+    marginBottom: 4,
+    justifyContent: 'center',
   },
   gradeText: {
     fontSize: 14,
@@ -579,14 +568,31 @@ const styles = StyleSheet.create({
   },
   removeButton: {
     padding: 4,
+    width: 24,
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   removeButtonText: {
     fontSize: 16,
     color: '#ff4444',
     fontWeight: 'bold',
+    lineHeight: 16,
+  },
+  gradeCommentInput: {
+    fontSize: 14,
+    color: '#333',
+    padding: 4,
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
+    borderRadius: 4,
+    textAlignVertical: 'top',
+    height: 64,
+    textAlign: 'left',
   },
   addGradeSection: {
-    marginTop: 10,
+    marginTop: 8,
+    paddingHorizontal: 4,
   },
   gradeInputRow: {
     flexDirection: 'column',
@@ -601,6 +607,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     width: 65,
     textAlign: 'center',
+    height: 40,
   },
   addGradeButton: {
     flex: 1,
@@ -614,22 +621,6 @@ const styles = StyleSheet.create({
     color: 'black',
     fontWeight: '500',
     fontSize: 12,
-  },
-  gradeCommentItem: {
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-    minHeight: 60,
-  },
-  gradeCommentInput: {
-    fontSize: 14,
-    color: '#333',
-    padding: 8,
-    borderWidth: 1,
-    borderColor: '#f0f0f0',
-    borderRadius: 4,
-    textAlignVertical: 'top',
-    minHeight: 50,
   },
   noGradesMessage: {
     padding: 10,

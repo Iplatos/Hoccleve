@@ -306,7 +306,7 @@ export const JournalHeader: React.FC<JournalHeaderProps> = ({
           <View style={styles.dropdownWrapper}>{renderSecondDropdown()}</View>
         </View>
         {isSeminarian && (
-          <View style={{ width: '100%', flexDirection: 'row' }}>
+          <View style={{ width: '100%', flexDirection: 'row', marginTop: 10 }}>
             <View style={styles.dropdownWrapper}>
               {userDirectionsloading ? (
                 <View style={styles.loadingContainer}>
@@ -316,7 +316,7 @@ export const JournalHeader: React.FC<JournalHeaderProps> = ({
               ) : subjectsData.length > 0 ? (
                 <DropdownForJournal
                   data={subjectsData}
-                  value={selectedDirection} // Используем переданный пропс
+                  value={selectedDirection}
                   onValueChange={handleSubjectChange}
                   placeholder="Выберите предмет"
                   searchable={true}
@@ -426,8 +426,6 @@ export const JournalHeader: React.FC<JournalHeaderProps> = ({
     </View>
   )
 }
-
-// Стили остаются без изменений
 
 const styles = StyleSheet.create({
   container: {

@@ -116,10 +116,6 @@ export const JournalScreen = () => {
     }
 
     const gradeValue = parseInt(newGrade)
-    if (gradeValue < 1 || gradeValue > 5) {
-      Alert.alert('Ошибка', 'Оценка должна быть от 1 до 5')
-      return
-    }
 
     const newGradeObj = {
       grade: gradeValue,
@@ -185,11 +181,6 @@ export const JournalScreen = () => {
         console.error('Error removing grade:', error)
         showToast(`Ошибка при удалении: ${error}`)
       })
-  }
-  const handleUpdateGradeComment = (index: number, comment: string) => {
-    const updatedGrades = [...newGrades]
-    updatedGrades[index].comment = comment
-    setNewGrades(updatedGrades)
   }
 
   const handleSaveTeacherData = (
@@ -399,6 +390,30 @@ export const JournalScreen = () => {
     onDirectionChange: handleDirectionChange,
     onGroupChange: handleGroupChange,
     isGroupDropdownDisabled: !selectedDirection,
+  }
+  const handleUpdateGradeComment = (gradeId: number, comment: string) => {
+    // Сначала проверяем, это новая оценка или существующая
+    const isNewGrade = newGrades.some((grade) => grade.id === gradeId)
+
+    if (isNewGrade) {
+      // Обновляем комментарий новой оценки
+      const updatedNewGrades = newGrades.map((grade) =>
+        grade.id === gradeId ? { ...grade, comment } : grade
+      )
+      setNewGrades(updatedNewGrades)
+    } else {
+      // Обновляем комментарий существующей оценки в selectedCell
+      const updatedCell = {
+        ...selectedCell,
+        lesson: {
+          ...selectedCell.lesson,
+          grades: selectedCell.lesson.grades.map((grade) =>
+            grade.id === gradeId ? { ...grade, comment } : grade
+          ),
+        },
+      }
+      setSelectedCell(updatedCell)
+    }
   }
 
   // Простая проверка загрузки
