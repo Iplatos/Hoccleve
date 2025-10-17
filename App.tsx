@@ -21,7 +21,6 @@ const App = () => {
         await VersionCheckService.checkForUpdate()
       }, 5000)
     }
-    console.log('hello')
 
     checkUpdate()
   }, [])
