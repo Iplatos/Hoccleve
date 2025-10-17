@@ -45,6 +45,7 @@ import periodSlice from '../slises/periodSlice.ts'
 import teacherJournalSlice from '../slises/teacherJournalSlice.ts'
 import directionGroupSlice from '../slises/directionGroupSlice.ts'
 import userDirectionsSlice from '../slises/userDirectionsSlice.ts'
+import editGradesSlice from '../slises/editGradesSlice.ts'
 
 const store = configureStore({
   reducer: {
@@ -97,6 +98,7 @@ const store = configureStore({
     currentScreen: currentScreenSlice,
     generalStudentJournal: generalStudentJournalSlice,
     userDirections: userDirectionsSlice,
+    editGrades: editGradesSlice,
     [baseApi.reducerPath]: baseApi.reducer,
     periods: periodSlice,
     directionGroup: directionGroupSlice,

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { ScrollView, View, Text, StyleSheet, ToastAndroid, Platform, Alert } from 'react-native'
 import { useAppDispatch, useAppSelector } from '../redux/hooks'
-import { fetchJournalData } from '../redux/slises/generalStudentJournalSlice'
+import { clearError, fetchJournalData } from '../redux/slises/generalStudentJournalSlice'
 import { fetchTeacherJournalData } from '../redux/slises/teacherJournalSlice'
 import { fetchPeriods, setSelectedPeriod } from '../redux/slises/periodSlice'
 import { getSortByField, getUnionDate, hasRole, removeDuplicates } from '../settings/helpers'
@@ -11,6 +11,7 @@ import { JournalStudentModal } from '../components/JournalStudentModal/JournalSt
 import JournalHeader from '../components/DropdownComponent/DropdownForJournal/DropdownForJournal'
 import { JournalTeacherTable } from '../components/JournalTeacherTable/JournalTeacherTable'
 import { JournalTeacherModal } from '../components/JournalTeacherModal/JournalTeacherModal'
+import { clearSuccess, editGrades } from '../redux/slises/editGradesSlice'
 
 export const JournalScreen = () => {
   const dispatch = useAppDispatch()
@@ -26,16 +27,25 @@ export const JournalScreen = () => {
     error: teacherError,
   } = useAppSelector((state) => state.teacherJournal)
 
-  const { periods, loading: periodsLoading } = useAppSelector((state) => state.periods)
+  const {
+    periods,
+    loading: periodsLoading,
+    selectedPeriod,
+  } = useAppSelector((state) => state.periods)
   const { userDirections } = useAppSelector((state) => state.userDirections)
   const { directionGroups } = useAppSelector((state) => state.directionGroup)
 
-  const [isInitialLoad, setIsInitialLoad] = useState(true)
   const [isModalVisible, setIsModalVisible] = useState(false)
   const [selectedCell, setSelectedCell] = useState(null)
   const [selectedDirection, setSelectedDirection] = useState<number | null>(null)
   const [selectedGroup, setSelectedGroup] = useState<number | null>(null)
+  const [newGrades, setNewGrades] = useState<any[]>([])
 
+  const {
+    loading: editGradesLoading,
+    error: editGradesError,
+    success: editGradesSuccess,
+  } = useAppSelector((state) => state.editGrades)
   const user = useAppSelector((state) => state.user.user)
 
   const isSeminarian = user ? hasRole(user, 'seminarian') : false
@@ -53,7 +63,7 @@ export const JournalScreen = () => {
   // Обработчик выбора направления
   const handleDirectionChange = (directionId: number) => {
     setSelectedDirection(directionId)
-    setSelectedGroup(null) // Сбрасываем выбранную группу при смене направления
+    setSelectedGroup(null)
     showToast('Направление выбрано. Теперь выберите группу.')
   }
 
@@ -64,80 +74,241 @@ export const JournalScreen = () => {
       return
     }
     setSelectedGroup(groupId)
+  }
 
-    // Делаем запрос за учениками при выборе группы
-    if (selectedPeriod) {
+  // Загружаем периоды при монтировании
+  useEffect(() => {
+    dispatch(fetchPeriods())
+  }, [dispatch])
+
+  // Загружаем данные студента при загрузке периодов
+  useEffect(() => {
+    if (isStudent && selectedPeriod) {
+      dispatch(
+        fetchJournalData({
+          start_date: selectedPeriod.start_date,
+          end_date: selectedPeriod.end_date,
+        })
+      )
+    }
+  }, [isStudent, selectedPeriod, dispatch])
+
+  // Загружаем данные семинариста при изменении группы или периода
+  useEffect(() => {
+    if (isSeminarian && selectedDirection && selectedGroup && selectedPeriod) {
       dispatch(
         fetchTeacherJournalData({
           start_date: selectedPeriod.start_date,
           end_date: selectedPeriod.end_date,
           type: 'group',
           direction: selectedDirection,
-          groups: groupId,
+          groups: selectedGroup,
         })
       )
     }
-  }
+  }, [isSeminarian, selectedDirection, selectedGroup, selectedPeriod, dispatch])
 
-  // Блокировка dropdown групп если не выбрано направление
-  const isGroupDropdownDisabled = !selectedDirection
-
-  const handleSaveTeacherData = (saveData: any) => {
-    console.log('Saving teacher data:', saveData)
-  }
-
-  useEffect(() => {
-    const loadInitialData = async () => {
-      try {
-        const periodsData = await dispatch(fetchPeriods()).unwrap()
-        let targetPeriod = null
-
-        if (periodsData && periodsData.length > 0) {
-          targetPeriod = periodsData[0]
-          dispatch(setSelectedPeriod(targetPeriod))
-        } else {
-          const endDate = new Date().toISOString().split('T')[0]
-          const startDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
-            .toISOString()
-            .split('T')[0]
-          targetPeriod = {
-            id: -1,
-            name: 'Последняя неделя',
-            start_date: startDate,
-            end_date: endDate,
-          }
-          dispatch(setSelectedPeriod(targetPeriod))
-        }
-
-        // Для семинариста загружаем данные только если выбраны направление и группа
-        if (isStudent) {
-          await dispatch(
-            fetchJournalData({
-              start_date: targetPeriod.start_date,
-              end_date: targetPeriod.end_date,
-            })
-          ).unwrap()
-        }
-        // Для семинариста данные загрузим позже, когда выберут направление и группу
-      } catch (error) {
-        console.error('Error loading data:', error)
-      } finally {
-        setIsInitialLoad(false)
-      }
+  // Функции для управления оценками
+  const handleAddGrade = (newGrade: string, newGradeComment: string) => {
+    if (!newGrade.trim()) {
+      Alert.alert('Ошибка', 'Введите оценку')
+      return
     }
 
-    loadInitialData()
-  }, [dispatch, isSeminarian, isStudent])
+    const gradeValue = parseInt(newGrade)
+    if (gradeValue < 1 || gradeValue > 5) {
+      Alert.alert('Ошибка', 'Оценка должна быть от 1 до 5')
+      return
+    }
 
-  // Получаем выбранный период из Redux
-  const selectedPeriod = useAppSelector((state) => state.periods.selectedPeriod)
+    const newGradeObj = {
+      grade: gradeValue,
+      weight: 1,
+      comment: newGradeComment,
+    }
 
-  const data = isSeminarian ? teacherData : studentData
-  const loading = isSeminarian ? teacherLoading : studentLoading
-
-  const saveGradeAndComment = () => {
-    console.log('save')
+    setNewGrades([...newGrades, newGradeObj])
   }
+
+  const handleRemoveGrade = (gradeId: any) => {
+    // Сначала проверяем, есть ли эта оценка в новых (несохраненных)
+    const newGradeIndex = newGrades.findIndex((grade) => grade.id === gradeId)
+    if (newGradeIndex !== -1) {
+      // Удаляем новую оценку
+      const updatedNewGrades = newGrades.filter((grade) => grade.id !== gradeId)
+      setNewGrades(updatedNewGrades)
+      showToast('Новая оценка удалена')
+      return
+    }
+
+    // Если не нашли в новых, значит это существующая оценка
+    const payload = {
+      date_id: selectedCell?.fullDate.id,
+      children_id: selectedCell?.studentData.id,
+      status: selectedCell?.status || '',
+      comment: selectedCell?.lesson?.comment || '',
+      grades: selectedCell?.lesson?.grades?.filter((grade) => grade.id !== gradeId) || [],
+    }
+
+    console.log('Remove payload:', payload)
+
+    dispatch(editGrades(payload))
+      .unwrap()
+      .then((response) => {
+        console.log('Grade removed successfully:', response)
+        showToast('Оценка удалена')
+
+        // ОБНОВЛЯЕМ selectedCell чтобы модалка показала актуальные данные
+        const updatedCell = {
+          ...selectedCell,
+          lesson: {
+            ...selectedCell.lesson,
+            grades: selectedCell?.lesson?.grades?.filter((grade) => grade.id !== gradeId) || [],
+          },
+        }
+        setSelectedCell(updatedCell)
+
+        // Перезагружаем данные таблицы (но модалку НЕ закрываем)
+        if (selectedPeriod && selectedDirection && selectedGroup) {
+          dispatch(
+            fetchTeacherJournalData({
+              start_date: selectedPeriod.start_date,
+              end_date: selectedPeriod.end_date,
+              type: 'group',
+              direction: selectedDirection,
+              groups: selectedGroup,
+            })
+          )
+        }
+      })
+      .catch((error) => {
+        console.error('Error removing grade:', error)
+        showToast(`Ошибка при удалении: ${error}`)
+      })
+  }
+  const handleUpdateGradeComment = (index: number, comment: string) => {
+    const updatedGrades = [...newGrades]
+    updatedGrades[index].comment = comment
+    setNewGrades(updatedGrades)
+  }
+
+  const handleSaveTeacherData = (
+    newGradeFromModal: string,
+    newGradeCommentFromModal: string,
+    status: string,
+    statusComment: string
+  ) => {
+    let finalGrades = [...newGrades]
+
+    if (newGradeFromModal.trim()) {
+      const gradeValue = parseInt(newGradeFromModal)
+      const newGradeObj = {
+        grade: gradeValue,
+        weight: 1,
+        comment: newGradeCommentFromModal,
+      }
+      finalGrades = [...newGrades, newGradeObj]
+    }
+
+    const allGrades = [...(selectedCell?.lesson?.grades || []), ...finalGrades]
+
+    // СОЗДАЕМ PAYLOAD ОБЪЕКТ
+    const payload = {
+      date_id: selectedCell?.fullDate.id,
+      children_id: selectedCell?.studentData.id,
+      status: status || '',
+      comment: statusComment || '',
+      grades: allGrades.map((grade: any) => ({
+        grade: grade.grade,
+        weight: grade.weight,
+        comment: grade.comment,
+        id: grade.id,
+      })),
+    }
+
+    console.log('Final payload:', payload)
+
+    dispatch(editGrades(payload))
+      .unwrap()
+      .then((response) => {
+        console.log('Grades saved successfully:', response)
+        showToast('Оценки успешно сохранены')
+
+        // Закрываем модалку и очищаем новые оценки
+        closeModal()
+
+        // Перезагружаем данные таблицы
+        if (selectedPeriod && selectedDirection && selectedGroup) {
+          dispatch(
+            fetchTeacherJournalData({
+              start_date: selectedPeriod.start_date,
+              end_date: selectedPeriod.end_date,
+              type: 'group',
+              direction: selectedDirection,
+              groups: selectedGroup,
+            })
+          )
+        }
+      })
+      .catch((error) => {
+        console.error('Error saving grades:', error)
+        showToast(`Ошибка при сохранении: ${error}`)
+      })
+  }
+
+  const openModal = (item, date, lessonData) => {
+    console.log(item, 'itemitemitemitemitem')
+    console.log(date, 'datadatadatadatadatadatadatadata')
+    console.log(lessonData, 'lessonDatalessonDatalessonData')
+
+    if (isSeminarian) {
+      // Очищаем новые оценки при открытии модалки
+      setNewGrades([])
+
+      setSelectedCell({
+        student: item.name,
+        date: date.date,
+        lesson: lessonData,
+        grades: lessonData?.grades || [],
+        status: lessonData?.status || '',
+        studentData: item,
+        fullDate: date,
+      })
+    } else {
+      setSelectedCell({
+        direction: item.name,
+        date: date.date,
+        lesson: lessonData,
+        topic: lessonData?.topic || '',
+      })
+    }
+
+    setIsModalVisible(true)
+  }
+
+  const closeModal = () => {
+    setIsModalVisible(false)
+    setSelectedCell(null)
+
+    // Очищаем новые оценки при закрытии модалки
+    setNewGrades([])
+  }
+
+  // Можно добавить эффект для автоматического закрытия модалки при успехе
+  useEffect(() => {
+    if (editGradesSuccess) {
+      // Дополнительные действия при успешном сохранении
+      dispatch(clearSuccess())
+    }
+  }, [editGradesSuccess, dispatch])
+
+  // Очищаем ошибки при размонтировании
+  useEffect(() => {
+    return () => {
+      dispatch(clearError())
+      dispatch(clearSuccess())
+    }
+  }, [dispatch])
 
   const getTableData = () => {
     if (isSeminarian && teacherData) {
@@ -165,58 +336,50 @@ export const JournalScreen = () => {
 
   const tableData = getTableData()
 
-  const openModal = (item, date, lessonData) => {
-    if (isSeminarian) {
-      setSelectedCell({
-        student: item.name,
-        date: date.date,
-        lesson: lessonData,
-        grades: lessonData?.grades || [],
-        status: lessonData?.status || '',
-      })
-    } else {
-      setSelectedCell({
-        direction: item.name,
-        date: date.date,
-        lesson: lessonData,
-        topic: lessonData?.topic || '',
-      })
-    }
-    setIsModalVisible(true)
-  }
-
-  const closeModal = () => {
-    setIsModalVisible(false)
-    setSelectedCell(null)
-  }
-
   const renderTable = () => {
-    // Для семинариста показываем таблицу только если есть данные
     if (isSeminarian) {
-      // Добавляем проверку на существование teacherData и его свойств
+      if (teacherLoading) {
+        return (
+          <View style={styles.fallbackContainer}>
+            <Text style={styles.fallbackText}>Загрузка данных журнала...</Text>
+          </View>
+        )
+      }
+
       if (!teacherData || !teacherData.children || teacherData.children.length === 0) {
         return (
           <View style={styles.fallbackContainer}>
             <Text style={styles.fallbackText}>
               {selectedDirection && selectedGroup
-                ? 'Загрузка данных...'
+                ? 'Нет данных для отображения'
                 : 'Выберите направление и группу для отображения журнала'}
             </Text>
           </View>
         )
       }
+
       return (
         <JournalTeacherTable data={tableData} dates={tableData.dates} onCellPress={openModal} />
       )
     } else if (isStudent) {
-      // Также добавляем проверку для студента
-      if (!studentData || !studentData.directions || studentData.directions.length === 0) {
+      if (studentLoading) {
         return (
           <View style={styles.fallbackContainer}>
-            <Text style={styles.fallbackText}>Нет данных для отображения</Text>
+            <Text style={styles.fallbackText}>Загрузка данных журнала...</Text>
           </View>
         )
       }
+
+      if (!studentData || !studentData.directions || studentData.directions.length === 0) {
+        return (
+          <View style={styles.fallbackContainer}>
+            <Text style={styles.fallbackText}>
+              {selectedPeriod ? 'Нет данных для отображения' : 'Период не выбран'}
+            </Text>
+          </View>
+        )
+      }
+
       return (
         <JournalStudentTable data={tableData} dates={tableData.dates} onCellPress={openModal} />
       )
@@ -235,23 +398,18 @@ export const JournalScreen = () => {
     selectedGroup,
     onDirectionChange: handleDirectionChange,
     onGroupChange: handleGroupChange,
-    isGroupDropdownDisabled,
+    isGroupDropdownDisabled: !selectedDirection,
   }
 
-  if (isInitialLoad || periodsLoading) {
-    return <Text>Loading</Text>
-  }
-
-  if (!isSeminarian && (!studentData || !studentData.directions)) {
+  // Простая проверка загрузки
+  if (periodsLoading) {
     return (
       <View style={styles.fallbackContainer}>
-        <Text style={styles.fallbackText}>Нет данных для отображения</Text>
+        <Text>Загрузка периодов...</Text>
       </View>
     )
   }
-  if (loading) {
-    return <Text>Loadingi</Text>
-  }
+
   return (
     <ScrollView style={styles.container}>
       <JournalHeader {...journalHeaderProps} />
@@ -261,7 +419,12 @@ export const JournalScreen = () => {
           visible={isModalVisible}
           selectedCell={selectedCell}
           onClose={closeModal}
-          onSave={saveGradeAndComment}
+          onSave={handleSaveTeacherData}
+          loading={editGradesLoading}
+          newGrades={newGrades}
+          onAddGrade={handleAddGrade}
+          onRemoveGrade={handleRemoveGrade}
+          onUpdateGradeComment={handleUpdateGradeComment}
         />
       ) : (
         <JournalStudentModal
@@ -284,6 +447,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
+    minHeight: 200,
   },
   fallbackText: {
     fontSize: 16,
