@@ -16,6 +16,8 @@ import { useAppDispatch, useAppSelector } from '../../../redux/hooks'
 import { setSelectedPeriod } from '../../../redux/slises/periodSlice'
 import { fetchDirectionGroupWithReplacement } from '../../../redux/slises/directionGroupSlice'
 import { fetchUserDirections } from '../../../redux/slises/userDirectionsSlice'
+import { hasRole } from '../../../settings/helpers'
+import { fetchTeacherJournalData } from '../../../redux/slises/teacherJournalSlice'
 
 interface DropdownItem {
   label: string
@@ -51,7 +53,6 @@ const DropdownForJournal: React.FC<DropdownForJournalProps> = ({
       search={searchable}
       searchPlaceholder="Поиск..."
       maxHeight={300}
-      //disable={disabled}
       labelField="label"
       activeColor="#6E368C"
       valueField="value"
@@ -78,12 +79,13 @@ export const JournalHeader: React.FC<JournalHeaderProps> = ({
   isGroupDropdownDisabled,
 }) => {
   const dispatch = useAppDispatch()
-  const { periods } = useAppSelector((state) => state.periods)
+  const { periods, selectedPeriod } = useAppSelector((state) => state.periods)
   const { user } = useAppSelector((state) => state.user)
   const { directionGroups, loading: directionGroupsLoading } = useAppSelector(
     (state) => state.directionGroup
   )
 
+  const isStudent = user ? hasRole(user, 'children') : false
   const [firstDropdownValue, setFirstDropdownValue] = useState<
     'default' | 'daily' | 'custom' | null
   >('default')
@@ -94,15 +96,15 @@ export const JournalHeader: React.FC<JournalHeaderProps> = ({
   const [startDate, setStartDate] = useState<string | null>(null)
   const [endDate, setEndDate] = useState<string | null>(null)
   const [datePickerMode, setDatePickerMode] = useState('start')
-
+  const isSeminarian = user ? hasRole(user, 'seminarian') : false
   const {
     userDirections,
     loading: userDirectionsloading,
     error,
   } = useAppSelector((state) => state.userDirections)
 
-  console.log(userDirections)
-  console.log(directionGroups)
+  console.log(userDirections, 'userDirectionsuserDirectionsuserDirectionsuserDirections')
+  console.log(directionGroups, 'directionGroupsdirectionGroups')
 
   const firstDropdownData = [
     { label: 'Периоды по умолчанию', value: 'default' },
@@ -152,7 +154,16 @@ export const JournalHeader: React.FC<JournalHeaderProps> = ({
     setFirstDropdownValue(item.value as 'default' | 'daily' | 'custom')
     setSecondDropdownValue(null)
   }
-
+  const handlePeriodChange = (startDate: string, endDate: string) => {
+    // Только устанавливаем период, данные загрузятся в JournalScreen
+    const customPeriod = {
+      id: -1,
+      name: 'Кастомный период',
+      start_date: startDate,
+      end_date: endDate,
+    }
+    dispatch(setSelectedPeriod(customPeriod))
+  }
   useEffect(() => {
     if (user) {
       dispatch(fetchDirectionGroupWithReplacement(user.id))
@@ -162,29 +173,17 @@ export const JournalHeader: React.FC<JournalHeaderProps> = ({
       const firstPeriod = periods[0]
       setSecondDropdownValue(firstPeriod.id)
       dispatch(setSelectedPeriod(firstPeriod))
-      dispatch(
-        fetchJournalData({
-          start_date: firstPeriod.start_date,
-          end_date: firstPeriod.end_date,
-        })
-      )
+      handlePeriodChange(firstPeriod.start_date, firstPeriod.end_date) // ← ИСПОЛЬЗУЕМ ФУНКЦИЮ
     }
   }, [periods, firstDropdownValue, secondDropdownValue, dispatch, user])
 
   const handleSecondDropdownChange = (item: DropdownItem) => {
     const currentPeriod = periods.find((data) => data.id === item.value)
-    console.log(currentPeriod)
 
     if (currentPeriod) {
       dispatch(setSelectedPeriod(currentPeriod))
       setSecondDropdownValue(item.value as number)
-
-      dispatch(
-        fetchJournalData({
-          start_date: currentPeriod.start_date,
-          end_date: currentPeriod.end_date,
-        })
-      )
+      handlePeriodChange(currentPeriod.start_date, currentPeriod.end_date) // ← ИСПОЛЬЗУЕМ ФУНКЦИЮ
     }
   }
 
@@ -209,12 +208,7 @@ export const JournalHeader: React.FC<JournalHeaderProps> = ({
     const day = String(date.getDate()).padStart(2, '0')
     const dateStr = `${year}-${month}-${day}`
 
-    dispatch(
-      fetchJournalData({
-        start_date: dateStr,
-        end_date: dateStr,
-      })
-    )
+    handlePeriodChange(dateStr, dateStr) // ← ИСПОЛЬЗУЕМ ФУНКЦИЮ
   }
 
   const handleCustomPeriodSelect = () => {
@@ -255,12 +249,7 @@ export const JournalHeader: React.FC<JournalHeaderProps> = ({
       return
     }
 
-    dispatch(
-      fetchJournalData({
-        start_date: startDate,
-        end_date: endDate,
-      })
-    )
+    handlePeriodChange(startDate, endDate) // ← ИСПОЛЬЗУЕМ ФУНКЦИЮ
     setIsPeriodModalVisible(false)
     setStartDate(null)
     setEndDate(null)
@@ -316,49 +305,51 @@ export const JournalHeader: React.FC<JournalHeaderProps> = ({
           </View>
           <View style={styles.dropdownWrapper}>{renderSecondDropdown()}</View>
         </View>
-        <View style={{ width: '100%', flexDirection: 'row' }}>
-          <View style={styles.dropdownWrapper}>
-            {userDirectionsloading ? (
-              <View style={styles.loadingContainer}>
-                <ActivityIndicator size="small" color="#6E368C" />
-                <Text style={styles.loadingText}>Загрузка предметов...</Text>
-              </View>
-            ) : subjectsData.length > 0 ? (
-              <DropdownForJournal
-                data={subjectsData}
-                value={selectedDirection} // Используем переданный пропс
-                onValueChange={handleSubjectChange}
-                placeholder="Выберите предмет"
-                searchable={true}
-              />
-            ) : (
-              <View style={styles.noDataContainer}>
-                <Text style={styles.noDataText}>Нет доступных предметов</Text>
-              </View>
-            )}
+        {isSeminarian && (
+          <View style={{ width: '100%', flexDirection: 'row' }}>
+            <View style={styles.dropdownWrapper}>
+              {userDirectionsloading ? (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator size="small" color="#6E368C" />
+                  <Text style={styles.loadingText}>Загрузка предметов...</Text>
+                </View>
+              ) : subjectsData.length > 0 ? (
+                <DropdownForJournal
+                  data={subjectsData}
+                  value={selectedDirection} // Используем переданный пропс
+                  onValueChange={handleSubjectChange}
+                  placeholder="Выберите предмет"
+                  searchable={true}
+                />
+              ) : (
+                <View style={styles.noDataContainer}>
+                  <Text style={styles.noDataText}>Нет доступных предметов</Text>
+                </View>
+              )}
+            </View>
+            <View style={styles.dropdownWrapper}>
+              {directionGroupsLoading ? (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator size="small" color="#6E368C" />
+                  <Text style={styles.loadingText}>Загрузка групп...</Text>
+                </View>
+              ) : directionGroupsData.length > 0 ? (
+                <DropdownForJournal
+                  data={directionGroupsData}
+                  value={selectedGroup} // Используем переданный пропс
+                  onValueChange={handleDirectionGroupChange}
+                  placeholder="Выберите группу"
+                  searchable={true}
+                  disabled={isGroupDropdownDisabled} // Добавляем disabled
+                />
+              ) : (
+                <View style={styles.noDataContainer}>
+                  <Text style={styles.noDataText}>Нет доступных групп</Text>
+                </View>
+              )}
+            </View>
           </View>
-          <View style={styles.dropdownWrapper}>
-            {directionGroupsLoading ? (
-              <View style={styles.loadingContainer}>
-                <ActivityIndicator size="small" color="#6E368C" />
-                <Text style={styles.loadingText}>Загрузка групп...</Text>
-              </View>
-            ) : directionGroupsData.length > 0 ? (
-              <DropdownForJournal
-                data={directionGroupsData}
-                value={selectedGroup} // Используем переданный пропс
-                onValueChange={handleDirectionGroupChange}
-                placeholder="Выберите группу"
-                searchable={true}
-                disabled={isGroupDropdownDisabled} // Добавляем disabled
-              />
-            ) : (
-              <View style={styles.noDataContainer}>
-                <Text style={styles.noDataText}>Нет доступных групп</Text>
-              </View>
-            )}
-          </View>
-        </View>
+        )}
       </View>
 
       {/* Восстановленная модалка для выбора периода */}

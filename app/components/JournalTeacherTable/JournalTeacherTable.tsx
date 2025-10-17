@@ -10,92 +10,6 @@ interface JournalTeacherTableProps {
   onCellPress: (student: any, date: any, lessonData: any) => void
 }
 
-const getTestData = () => {
-  const testDates = [
-    { id: '89286', date: '2025-10-06' },
-    { id: '89333', date: '2025-10-03' },
-    { id: '89334', date: '2025-10-04' },
-    { id: '89335', date: '2025-10-05' },
-  ]
-
-  const testStudents = [
-    {
-      id: 1,
-      name: 'Иванов Алексей Петрович',
-      gpa: 4.5,
-      dates: {
-        '89286': {
-          status: '10',
-          grades: [{ grade: 5, weight: 1, comment: 'Отлично' }],
-          comment: '',
-        },
-        '89333': {
-          status: '5',
-          grades: [
-            { grade: 4, weight: 1, comment: 'Хорошо asdda asd asdaw a asd  sada sda sda sdasd ' },
-          ],
-          comment: '',
-        },
-        '89334': {
-          status: '3',
-          grades: [{ grade: 3, weight: 1, comment: 'Удовлетворительно' }],
-          comment: '',
-        },
-        '89335': { status: '0', grades: [], comment: 'Отсутствовал' },
-      },
-    },
-    {
-      id: 2,
-      name: 'Петрова Мария Сергеевна',
-      gpa: 4.8,
-      dates: {
-        '89286': { status: '10', grades: [{ grade: 5, weight: 1, comment: '' }], comment: '' },
-        '89333': { status: '10', grades: [{ grade: 5, weight: 1, comment: '' }], comment: '' },
-        '89334': { status: '5', grades: [{ grade: 4, weight: 1, comment: '' }], comment: '' },
-        '89335': { status: '5', grades: [{ grade: 4, weight: 1, comment: '' }], comment: '' },
-      },
-    },
-    {
-      id: 3,
-      name: 'Сидоров Дмитрий Иванович',
-      gpa: 3.2,
-      dates: {
-        '89286': { status: '3', grades: [{ grade: 3, weight: 1, comment: '' }], comment: '' },
-        '89333': { status: '0', grades: [], comment: 'Болел' },
-        '89334': { status: '5', grades: [{ grade: 4, weight: 1, comment: '' }], comment: '' },
-        '89335': { status: '3', grades: [{ grade: 3, weight: 1, comment: '' }], comment: '' },
-      },
-    },
-    {
-      id: 4,
-      name: 'Козлова Анна Владимировна',
-      gpa: 4.0,
-      dates: {
-        '89286': { status: '5', grades: [{ grade: 4, weight: 1, comment: '' }], comment: '' },
-        '89333': { status: '5', grades: [{ grade: 4, weight: 1, comment: '' }], comment: '' },
-        '89334': { status: '5', grades: [{ grade: 4, weight: 1, comment: '' }], comment: '' },
-        '89335': { status: '5', grades: [{ grade: 4, weight: 1, comment: '' }], comment: '' },
-      },
-    },
-    {
-      id: 5,
-      name: 'Николаев Артем Олегович',
-      gpa: 3.9,
-      dates: {
-        '89286': { status: '10', grades: [{ grade: 5, weight: 1, comment: '' }], comment: '' },
-        '89333': { status: '3', grades: [{ grade: 3, weight: 1, comment: '' }], comment: '' },
-        '89334': { status: '5', grades: [{ grade: 4, weight: 1, comment: '' }], comment: '' },
-        '89335': { status: '5', grades: [{ grade: 4, weight: 1, comment: '' }], comment: '' },
-      },
-    },
-  ]
-
-  return {
-    dates: testDates,
-    children: testStudents,
-  }
-}
-
 export const JournalTeacherTable: React.FC<JournalTeacherTableProps> = ({
   data,
   dates,
@@ -109,10 +23,8 @@ export const JournalTeacherTable: React.FC<JournalTeacherTableProps> = ({
   const verticalScrollRef = useRef(null)
   const fixedColumnScrollRef = useRef(null)
   const isScrolling = useRef(false)
-  console.log(data)
-  console.log(dates)
 
-  const displayData = data?.children?.length > 0 ? data : getTestData()
+  const displayData = data?.children?.length > 0 ? data : []
 
   const rawDates = dates?.length > 0 ? dates : displayData.dates || []
   const sortedDates = [...rawDates].sort((a, b) => {
@@ -249,7 +161,7 @@ export const JournalTeacherTable: React.FC<JournalTeacherTableProps> = ({
               </View>
 
               {/* СРЕДНИЙ БАЛЛ */}
-              <View style={[styles.dateHeader, { width: DATA_COLUMN_WIDTH }]}>
+              <View style={[styles.dateHeader, { width: 60 }]}>
                 <Text style={styles.headerText}>Ср. балл</Text>
               </View>
 
